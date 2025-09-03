@@ -41,7 +41,6 @@ export function Groups() {
     deleteWorkspace, 
     setCurrentWorkspace,
     renameWorkspace,
-    loadWorkspaces,
     isLoading,
   } = useWorkspace();
 
@@ -57,9 +56,8 @@ export function Groups() {
   const chevronRef = useRef<SVGSVGElement>(null);
   const indicatorRef = useRef<HTMLSpanElement>(null);
 
-  useEffect(() => {
-    loadWorkspaces();
-  }, [loadWorkspaces]);
+  // REMOVED: loadWorkspaces() call from useEffect to prevent infinite loops
+  // The workspaces should be loaded from the parent component
 
   const currentWorkspace = workspaces.find(ws => ws.id === currentWorkspaceId);
 

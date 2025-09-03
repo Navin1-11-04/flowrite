@@ -14,7 +14,7 @@ import { useWorkspace } from "@/store/useWorkspace";
 
 export const Navbar = () => {
   const { theme, setTheme } = useTheme();
-  const { createPage, loadWorkspaces } = useWorkspace();
+  const { createPage } = useWorkspace(); // REMOVED loadWorkspaces from here
   
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
@@ -32,7 +32,7 @@ export const Navbar = () => {
   const separatorRef = useRef<HTMLSpanElement>(null);
   const iconRefs = useRef<Record<string, SVGSVGElement | null>>({});
 
-  // Handle resize and mount effects
+  // Handle resize and mount effects - FIXED: Removed loadWorkspaces call
   useEffect(() => {
     setMounted(true);
     setIsMobile(window.innerWidth < 768);
@@ -40,11 +40,8 @@ export const Navbar = () => {
     const onResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener("resize", onResize);
     
-    // Load workspaces on mount
-    loadWorkspaces();
-    
     return () => window.removeEventListener("resize", onResize);
-  }, [loadWorkspaces]);
+  }, []); // FIXED: Removed loadWorkspaces dependency
 
   // Handle fullscreen changes
   useEffect(() => {
