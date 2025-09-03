@@ -1,175 +1,221 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { gsap } from "gsap";
 import { useEditorIntegration, usePageTitle } from "./useEditorIntegration";
 import { useWorkspace } from "@/store/useWorkspace";
-import { useSession } from "@/store/useSession";
 import { cn } from "@/lib/utils";
 import { 
   FileText, 
-  Clock, 
-  Save, 
   AlertCircle,
-  Type,
-  AlignLeft,
-  Eye,
-  EyeOff,
 } from "lucide-react";
 
 interface EditorProps {
   className?: string;
   focusMode?: boolean;
-  onFocus?: () => void;
-  onBlur?: () => void;
 }
 
-export function Editor({ className, focusMode = false, onFocus, onBlur }: EditorProps) {
-  const { currentPage, handleContentChange, isReady } = useEditorIntegration();
-  const { updateTitle, currentTitle } = usePageTitle();
+const CONTENT_PLACEHOLDERS = [
+  "Start writing your story...",
+  "Let your thoughts flow...",
+  "No distractions, just write...",
+  "Capture your ideas...",
+  "Write freely, no limits...",
+];
+
+export function Editor({ className, focusMode = false }: EditorProps) {
+  const { currentPage, handleContentChange } = useEditorIntegration();
+  const { updateTitle } = usePageTitle();
   const { 
     workspaces, 
     currentWorkspaceId, 
     createPage,
     isLoading: workspaceLoading 
   } = useWorkspace();
-  
-  const {
-    wordCount,
-    charCount,
-    isWriting,
-    startTime,
-    lastSaved,
-  } = useSession();
 
-  const [content, setContent] = useState("");
-  const [title, setTitle] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
-  const [showStats, setShowStats] = useState(true);
-  const [fontSize, setFontSize] = useState("text-base");
-  const [lineHeight, setLineHeight] = useState("leading-relaxed");
+  // State for animated placeholders
+  const [contentPlaceholderIndex, setContentPlaceholderIndex] = useState(0);
+  const [titleHasFocus, setTitleHasFocus] = useState(false);
+  const [contentHasFocus, setContentHasFocus] = useState(false);
 
-  const titleInputRef = useRef<HTMLInputElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const saveTimeoutRef = useRef<NodeJS.Timeout>();
+  // Refs for DOM manipulation
+  const titleEditorRef = useRef<HTMLDivElement | null>(null);
+  const contentEditorRef = useRef<HTMLDivElement | null>(null);
+  const contentPlaceholderRef = useRef<HTMLDivElement | null>(null);
+  const titleCaretRef = useRef<HTMLDivElement | null>(null);
+  const contentCaretRef = useRef<HTMLDivElement | null>(null);
+
+  // Auto-save timeout
+  const saveTimeout = useRef<number | null>(null);
 
   // Sync with current page
   useEffect(() => {
     if (currentPage) {
-      setContent(currentPage.content);
-      setTitle(currentPage.title);
+      if (titleEditorRef.current) {
+        titleEditorRef.current.textContent = currentPage.title || "Untitled";
+      }
+      if (contentEditorRef.current) {
+        contentEditorRef.current.textContent = currentPage.content;
+        if (contentPlaceholderRef.current) {
+          contentPlaceholderRef.current.style.display = currentPage.content ? "none" : "block";
+        }
+      }
     } else {
-      setContent("");
-      setTitle("Untitled");
+      if (titleEditorRef.current) {
+        titleEditorRef.current.textContent = "Untitled";
+      }
+      if (contentEditorRef.current) {
+        contentEditorRef.current.textContent = "";
+        if (contentPlaceholderRef.current) {
+          contentPlaceholderRef.current.style.display = "block";
+        }
+      }
     }
-  }, [currentPage]);
+  }, [currentPage?.id]);
 
-  // Handle content changes with debounced saving indicator
-  const onContentChange = useCallback((newContent: string) => {
-    setContent(newContent);
-    setIsSaving(true);
-    
-    // Clear existing timeout
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
+  // Animated placeholders for content only
+  useEffect(() => {
+    if (!contentPlaceholderRef.current || !contentCaretRef.current) return;
+    if (contentHasFocus || (contentEditorRef.current?.textContent?.length || 0) > 0) return;
+
+    const tl = gsap.timeline({ repeat: -1 });
+    tl.to([contentPlaceholderRef.current, contentCaretRef.current], {
+      opacity: 0,
+      duration: 0.5,
+      ease: "power1.inOut",
+      onComplete: () => setContentPlaceholderIndex((i) => (i + 1) % CONTENT_PLACEHOLDERS.length),
+    }).to([contentPlaceholderRef.current, contentCaretRef.current], {
+      opacity: 1,
+      duration: 0.5,
+      ease: "power1.inOut",
+      delay: 0.5,
+    });
+
+    return () => tl.kill();
+  }, [contentHasFocus]);
+
+  // Update caret position
+  const updateCaretPosition = (editorRef: React.RefObject<HTMLDivElement>, caretRef: React.RefObject<HTMLDivElement>, hasFocus: boolean, isTitle: boolean = false) => {
+    if (!editorRef.current || !caretRef.current) return;
+
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0 || !hasFocus) {
+      caretRef.current.style.opacity = "0";
+      return;
     }
-    
-    // Set saving to false after save completes
-    saveTimeoutRef.current = setTimeout(() => {
-      setIsSaving(false);
-    }, 1200);
-    
-    handleContentChange(newContent, title);
-  }, [handleContentChange, title]);
 
-  // Handle title changes
-  const onTitleChange = useCallback((newTitle: string) => {
-    setTitle(newTitle);
-    updateTitle(newTitle);
-  }, [updateTitle]);
+    if (!editorRef.current.contains(selection.anchorNode)) {
+      caretRef.current.style.opacity = "0";
+      return;
+    }
+
+    const range = selection.getRangeAt(0).cloneRange();
+    range.collapse(true);
+
+    const span = document.createElement("span");
+    span.textContent = "\u200B";
+    range.insertNode(span);
+
+    const rect = span.getBoundingClientRect();
+    const editorRect = editorRef.current.getBoundingClientRect();
+
+    const top = rect.top - editorRect.top;
+    const left = rect.left - editorRect.left;
+
+    span.parentNode?.removeChild(span);
+
+    // Adjust vertical position for title specifically
+    const verticalAdjustment = isTitle ? 0 : -2;
+    
+    caretRef.current.style.top = `${top + verticalAdjustment}px`;
+    caretRef.current.style.left = `${left}px`;
+    caretRef.current.style.height = `${Math.max(rect.height, 18)}px`;
+    caretRef.current.style.opacity = "1";
+  };
+
+  // Track selection changes
+  useEffect(() => {
+    const handleSelectionChange = () => {
+      if (titleHasFocus) updateCaretPosition(titleEditorRef, titleCaretRef, titleHasFocus, true);
+      if (contentHasFocus) updateCaretPosition(contentEditorRef, contentCaretRef, contentHasFocus);
+    };
+    document.addEventListener("selectionchange", handleSelectionChange);
+    return () => document.removeEventListener("selectionchange", handleSelectionChange);
+  }, [titleHasFocus, contentHasFocus]);
+
+  // Debounced save function
+  const debouncedSave = useCallback((title: string, content: string) => {
+    if (saveTimeout.current) window.clearTimeout(saveTimeout.current);
+    saveTimeout.current = window.setTimeout(() => {
+      handleContentChange(content, title);
+      updateTitle(title || "Untitled");
+    }, 800);
+  }, [handleContentChange, updateTitle]);
+
+  // Handle title input
+  const handleTitleInput = (e: React.FormEvent<HTMLDivElement>) => {
+    const titleText = e.currentTarget.textContent?.trim() || "Untitled";
+    const contentText = contentEditorRef.current?.textContent || "";
+
+    updateCaretPosition(titleEditorRef, titleCaretRef, titleHasFocus, true);
+    debouncedSave(titleText, contentText);
+  };
+
+  // Handle content input
+  const handleContentInput = (e: React.FormEvent<HTMLDivElement>) => {
+    const contentText = e.currentTarget.textContent || "";
+    const titleText = titleEditorRef.current?.textContent?.trim() || "Untitled";
+
+    if (contentPlaceholderRef.current) {
+      contentPlaceholderRef.current.style.display = contentText.length > 0 ? "none" : "block";
+    }
+
+    updateCaretPosition(contentEditorRef, contentCaretRef, contentHasFocus);
+    debouncedSave(titleText, contentText);
+  };
+
+  // Focus handlers
+  const handleTitleFocus = () => {
+    setTitleHasFocus(true);
+    setTimeout(() => updateCaretPosition(titleEditorRef, titleCaretRef, true, true), 10);
+  };
+
+  const handleTitleBlur = () => {
+    setTitleHasFocus(false);
+    if (titleCaretRef.current) titleCaretRef.current.style.opacity = "0";
+  };
+
+  const handleContentFocus = () => {
+    setContentHasFocus(true);
+    setTimeout(() => updateCaretPosition(contentEditorRef, contentCaretRef, true), 10);
+  };
+
+  const handleContentBlur = () => {
+    setContentHasFocus(false);
+    if (contentCaretRef.current) contentCaretRef.current.style.opacity = "0";
+  };
 
   // Auto-focus on new page creation
   useEffect(() => {
-    if (currentPage && !currentPage.content && !currentPage.title.startsWith("Untitled")) {
-      titleInputRef.current?.focus();
-      titleInputRef.current?.select();
+    if (currentPage && !currentPage.title && titleEditorRef.current) {
+      const timer = window.setTimeout(() => {
+        titleEditorRef.current?.focus();
+      }, 100);
+      return () => window.clearTimeout(timer);
     }
-  }, [currentPage]);
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-    };
-  }, []);
+  }, [currentPage?.id]);
 
   // Create initial page if needed
   const handleCreateFirstPage = async () => {
     await createPage("My First Page");
   };
 
-  // Format time for session display
-  const formatSessionTime = (timestamp: number | null) => {
-    if (!timestamp) return "0m";
-    const minutes = Math.floor((Date.now() - timestamp) / (1000 * 60));
-    if (minutes < 60) return `${minutes}m`;
-    const hours = Math.floor(minutes / 60);
-    const remainingMinutes = minutes % 60;
-    return `${hours}h ${remainingMinutes}m`;
-  };
-
-  // Format last saved time
-  const formatLastSaved = (timestamp: number | null) => {
-    if (!timestamp) return "Never";
-    const now = Date.now();
-    const diff = now - timestamp;
-    if (diff < 10000) return "Just now";
-    if (diff < 60000) return "Less than a minute ago";
-    if (diff < 3600000) return `${Math.floor(diff / 60000)} minutes ago`;
-    return new Date(timestamp).toLocaleTimeString();
-  };
-
-  // Handle keyboard shortcuts
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    // Ctrl/Cmd + S to manually save (visual feedback)
-    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-      e.preventDefault();
-      setIsSaving(true);
-      setTimeout(() => setIsSaving(false), 800);
-    }
-    
-    // Ctrl/Cmd + T to focus title
-    if ((e.ctrlKey || e.metaKey) && e.key === 't') {
-      e.preventDefault();
-      titleInputRef.current?.focus();
-      titleInputRef.current?.select();
-    }
-    
-    // Escape to blur current element
-    if (e.key === 'Escape') {
-      (e.target as HTMLElement).blur();
-    }
+  // Clean up timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeout.current) window.clearTimeout(saveTimeout.current);
+    };
   }, []);
-
-  // Enhanced focus/blur handlers that call parent callbacks
-  const handleFocus = useCallback(() => {
-    onFocus?.();
-  }, [onFocus]);
-
-  const handleBlur = useCallback((e: React.FocusEvent) => {
-    // Only trigger blur if focus is leaving the entire editor container
-    const currentTarget = e.currentTarget;
-    setTimeout(() => {
-      if (!currentTarget.contains(document.activeElement)) {
-        onBlur?.();
-      }
-    }, 0);
-  }, [onBlur]);
 
   // Show loading state
   if (workspaceLoading) {
@@ -198,10 +244,10 @@ export function Editor({ className, focusMode = false, onFocus, onBlur }: Editor
             </p>
           </div>
           
-          <Button onClick={handleCreateFirstPage} className="gap-2">
+          <button onClick={handleCreateFirstPage} className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors">
             <FileText className="w-4 h-4" />
             Create First Page
-          </Button>
+          </button>
         </div>
       </div>
     );
@@ -220,126 +266,66 @@ export function Editor({ className, focusMode = false, onFocus, onBlur }: Editor
   }
 
   return (
-    <div 
-      className={cn("h-full flex flex-col max-w-4xl mx-auto", className)}
-      onKeyDown={handleKeyDown}
-      onFocus={handleFocus}
-      onBlur={handleBlur}
-      tabIndex={-1} // Make container focusable for blur detection
-    >
-      {/* Editor Header */}
-      {!focusMode && (
-        <div className="flex items-center justify-between pb-4 border-b border-border/30">
-          <div className="flex items-center gap-3">
-            <FileText className="w-5 h-5 text-muted-foreground" />
-            <div className="flex items-center gap-2">
-              {isSaving ? (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
-                  Saving...
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Save className="w-3 h-3" />
-                  Saved {formatLastSaved(lastSaved)}
-                </div>
-              )}
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowStats(!showStats)}
-              className="text-xs gap-1"
-            >
-              {showStats ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-              {showStats ? "Hide" : "Show"} Stats
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Title Input */}
-      <div className="py-4">
-        <Input
-          ref={titleInputRef}
-          value={title}
-          onChange={(e) => onTitleChange(e.target.value)}
+    <div className={cn("h-full flex flex-col max-w-6xl mx-auto", className)}>
+      {/* Title Editor */}
+      <div className="relative py-4">
+        <div
+          ref={titleEditorRef}
+          contentEditable
+          suppressContentEditableWarning
+          onInput={handleTitleInput}
+          onBlur={handleTitleBlur}
+          onFocus={handleTitleFocus}
+          spellCheck={false}
           className={cn(
-            "text-2xl md:text-3xl font-bold border-none bg-transparent px-0 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/50",
+            "outline-none whitespace-pre-wrap break-words relative z-10 text-base md:text-lg font-semibold leading-tight",
             focusMode && "text-center"
           )}
-          placeholder="Untitled"
-          maxLength={100}
+          style={{ caretColor: "transparent" }}
+        />
+        <div
+          ref={titleCaretRef}
+          className="absolute w-[3px] bg-yellow-400 rounded-sm"
+          style={{ top: 0, left: 0, opacity: 0, pointerEvents: "none", zIndex: 10 }}
         />
       </div>
 
       {/* Content Editor */}
-      <div className="flex-1 min-h-0">
-        <Textarea
-          ref={textareaRef}
-          value={content}
-          onChange={(e) => onContentChange(e.target.value)}
+      <div className="flex-1 min-h-0 relative">
+        <div
+          ref={contentPlaceholderRef}
+          className="pointer-events-none absolute top-5.5 left-2 text-primary/50 select-none whitespace-pre-wrap text-lg md:text-3xl font-extralight"
+        >
+          {CONTENT_PLACEHOLDERS[contentPlaceholderIndex]}
+        </div>
+        <div
+          ref={contentEditorRef}
+          contentEditable
+          suppressContentEditableWarning
+          onInput={handleContentInput}
+          onBlur={handleContentBlur}
+          onFocus={handleContentFocus}
+          spellCheck={false}
           className={cn(
-            "min-h-full border-none bg-transparent px-0 focus-visible:ring-0 focus-visible:ring-offset-0 resize-none placeholder:text-muted-foreground/50",
-            fontSize,
-            lineHeight,
+            "min-h-full outline-none whitespace-pre-wrap break-words relative z-10 py-4 text-lg md:text-3xl font-normal leading-relaxed",
             focusMode && "text-center"
           )}
-          placeholder="Start writing your story..."
+          style={{ caretColor: "transparent" }}
+        />
+        <div
+          ref={contentCaretRef}
+          className="absolute w-[3px] bg-yellow-400 rounded-sm"
+          style={{ top: 0, left: 0, opacity: 0, pointerEvents: "none", zIndex: 10 }}
         />
       </div>
-
-      {/* Stats Bar */}
-      {showStats && !focusMode && (
-        <div className="flex items-center justify-between py-4 border-t border-border/30 text-xs text-muted-foreground">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1">
-              <Type className="w-3 h-3" />
-              <span>{wordCount} words</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <AlignLeft className="w-3 h-3" />
-              <span>{charCount} characters</span>
-            </div>
-            {startTime && (
-              <div className="flex items-center gap-1">
-                <Clock className="w-3 h-3" />
-                <span>Session: {formatSessionTime(startTime)}</span>
-              </div>
-            )}
-          </div>
-          
-          <div className="flex items-center gap-2">
-            {isWriting && (
-              <Badge variant="secondary" className="text-xs">
-                Writing
-              </Badge>
-            )}
-            {currentPage && (
-              <span>Last updated: {new Date(currentPage.updatedAt).toLocaleString()}</span>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Focus Mode Minimal Stats */}
-      {showStats && focusMode && (
-        <div className="text-center py-2 text-xs text-muted-foreground">
-          {wordCount} words • {charCount} characters
-          {startTime && ` • ${formatSessionTime(startTime)}`}
-        </div>
-      )}
     </div>
   );
 }
 
-// Optional: Export a wrapped version with default styling
+// Export wrapped version with default styling
 export function EditorContainer() {
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl min-h-screen">
+    <div className="container mx-auto px-4 py-8 max-w-6xl min-h-screen">
       <Editor className="h-full" />
     </div>
   );

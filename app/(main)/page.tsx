@@ -4,25 +4,27 @@ import { useRef, useState, useEffect } from "react";
 import { Editor } from "./_components/editor";
 import { Footer } from "./_components/footer";
 import { Navbar } from "./_components/navbar";
+import { CreateWorkspaceModal } from "./_components/create-workspace-modal";
 import { useWorkspace } from "@/store/useWorkspace";
 import { useSession } from "@/store/useSession";
 import gsap from "gsap";
 
 const MainPage = () => {
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
-  const [editorFocused, setEditorFocused] = useState(false);
+  const [showFooter, setShowFooter] = useState(true);
   const footerRef = useRef<HTMLDivElement>(null);
 
   // Initialize stores
-  const { loadWorkspaces, isLoading, workspaces, error, clearError } = useWorkspace();
+  const { loadWorkspaces, isLoading, workspaces, error, clearError, currentWorkspaceId } = useWorkspace();
   const { startSession } = useSession();
 
   // Track initialization to prevent multiple calls
   const [initialized, setInitialized] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
-  // Initialize app on mount - FIXED: Added proper dependency array
+  // Initialize app on mount
   useEffect(() => {
-    if (initialized) return; // Prevent multiple initializations
+    if (initialized) return;
     
     console.log('MainPage initializing...');
 
@@ -45,12 +47,22 @@ const MainPage = () => {
     };
     
     initialize();
-  }, [initialized, loadWorkspaces, startSession]); // FIXED: Added dependencies
+  }, [initialized, loadWorkspaces, startSession]);
 
+  // Check if we need to show create workspace modal
+  useEffect(() => {
+    if (initialized && !isLoading && workspaces.length === 0 && !currentWorkspaceId && !error) {
+      setShowCreateModal(true);
+    } else {
+      setShowCreateModal(false);
+    }
+  }, [initialized, isLoading, workspaces.length, currentWorkspaceId, error]);
+
+  // Handle footer visibility with animation
   useEffect(() => {
     if (!footerRef.current) return;
 
-    if (!editorFocused) {
+    if (showFooter) {
       // Show footer
       gsap.to(footerRef.current, {
         y: 0,
@@ -67,7 +79,7 @@ const MainPage = () => {
         ease: "power3.in",
       });
     }
-  }, [editorFocused]);
+  }, [showFooter]);
 
   // Show error state
   if (error) {
@@ -91,6 +103,7 @@ const MainPage = () => {
                   if (window.indexedDB) {
                     indexedDB.deleteDatabase("WritingApp");
                   }
+                  localStorage.clear();
                   window.location.reload();
                 }}
                 className="px-4 py-2 bg-destructive text-destructive-foreground rounded-md"
@@ -119,30 +132,35 @@ const MainPage = () => {
   }
 
   return (
-    <div className="group w-full min-h-screen h-screen flex flex-col bg-background text-foreground p-5 gap-y-2 relative overflow-hidden">
-      <Navbar />
+    <>
+      <div className="group w-full min-h-screen h-screen flex flex-col bg-background text-foreground p-5 gap-y-2 relative overflow-hidden">
+        <Navbar onToggleFooter={() => setShowFooter(!showFooter)} />
 
-      {/* Scrollable editor container */}
-      <main
-        ref={scrollContainerRef}
-        className="flex-1 h-full w-full leading-none my-[5vh] md:my-[15vh] overflow-y-auto place-items-center relative"
-        style={{
-          scrollbarGutter: "stable",
-        }}
-      >
-        <Editor
-          onFocus={() => setEditorFocused(true)}
-          onBlur={() => setEditorFocused(false)}
-        />
-      </main>
-      
-      <div
-        ref={footerRef}
-        className="absolute bottom-0 left-0 z-20 right-0 translate-y-full opacity-0"
-      >
-        <Footer />
+        {/* Scrollable editor container */}
+        <main
+          ref={scrollContainerRef}
+          className="flex-1 h-full w-full leading-none my-[5vh] md:my-[15vh] overflow-y-auto place-items-center relative"
+          style={{
+            scrollbarGutter: "stable",
+          }}
+        >
+          <Editor />
+        </main>
+        
+        <div
+          ref={footerRef}
+          className="absolute bottom-0 left-0 z-20 right-0 translate-y-0 opacity-100"
+        >
+          <Footer />
+        </div>
       </div>
-    </div>
+
+      {/* Create Workspace Modal */}
+      <CreateWorkspaceModal 
+        open={showCreateModal} 
+        onOpenChange={setShowCreateModal}
+      />
+    </>
   );
 };
 

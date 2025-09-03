@@ -13,13 +13,12 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ChevronsUpDown, Plus, Trash, Edit3, AlertTriangle } from "lucide-react";
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState } from "react";
 import { gsap } from "gsap";
 import { useWorkspace } from "@/store/useWorkspace";
 
@@ -55,9 +54,6 @@ export function Groups() {
   const triggerRef = useRef<HTMLButtonElement>(null);
   const chevronRef = useRef<SVGSVGElement>(null);
   const indicatorRef = useRef<HTMLSpanElement>(null);
-
-  // REMOVED: loadWorkspaces() call from useEffect to prevent infinite loops
-  // The workspaces should be loaded from the parent component
 
   const currentWorkspace = workspaces.find(ws => ws.id === currentWorkspaceId);
 
@@ -196,19 +192,18 @@ export function Groups() {
                 >
                   <Edit3 className="w-3 h-3" />
                 </Button>
-                {workspaces.length > 1 && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-5 w-5 text-red-500 hover:text-red-600"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openDeleteDialog(workspace);
-                    }}
-                  >
-                    <Trash className="w-3 h-3" />
-                  </Button>
-                )}
+                {/* Allow deletion of any workspace - no restriction */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5 text-red-500 hover:text-red-600"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openDeleteDialog(workspace);
+                  }}
+                >
+                  <Trash className="w-3 h-3" />
+                </Button>
               </div>
             </DropdownMenuItem>
           ))}
@@ -311,6 +306,11 @@ export function Groups() {
             </DialogTitle>
             <DialogDescription>
               Are you sure you want to delete this workspace? This action cannot be undone and will delete all pages within it.
+              {workspaces.length === 1 && (
+                <span className="block mt-2 text-orange-600 font-medium">
+                  This is your last workspace. You'll be prompted to create a new one after deletion.
+                </span>
+              )}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

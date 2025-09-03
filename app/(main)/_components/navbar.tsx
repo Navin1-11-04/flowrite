@@ -11,11 +11,18 @@ import { gsap } from "gsap";
 import { Menu } from "./menu";
 import { useWorkspace } from "@/store/useWorkspace";
 
+interface NavbarProps {
+  onToggleFooter:() => void;
+}
 
-export const Navbar = () => {
+export const Navbar = (
+  {onToggleFooter}
+  :
+  NavbarProps
+) => {
   const { theme, setTheme } = useTheme();
   const { createPage } = useWorkspace(); // REMOVED loadWorkspaces from here
-  
+
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -36,10 +43,10 @@ export const Navbar = () => {
   useEffect(() => {
     setMounted(true);
     setIsMobile(window.innerWidth < 768);
-    
+
     const onResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener("resize", onResize);
-    
+
     return () => window.removeEventListener("resize", onResize);
   }, []); // FIXED: Removed loadWorkspaces dependency
 
@@ -47,7 +54,7 @@ export const Navbar = () => {
   useEffect(() => {
     const handleChange = () => setIsFullscreen(!!document.fullscreenElement);
     document.addEventListener("fullscreenchange", handleChange);
-    
+
     return () => document.removeEventListener("fullscreenchange", handleChange);
   }, []);
 
@@ -97,76 +104,89 @@ export const Navbar = () => {
   }, []);
 
   // Animate layout transitions
-  const animateLayoutChange = useCallback((fromLayout: string, toLayout: string): Promise<void> => {
-    return new Promise((resolve) => {
-      const tl = gsap.timeline({ onComplete: resolve });
+  const animateLayoutChange = useCallback(
+    (fromLayout: string, toLayout: string): Promise<void> => {
+      return new Promise((resolve) => {
+        const tl = gsap.timeline({ onComplete: resolve });
 
-      if (fromLayout === "mobile-normal" && toLayout === "mobile-focus") {
-        // Mobile normal to focus - simplified
-        tl.to([topRowRef.current, bottomRowRef.current], {
-          opacity: 0,
-          duration: 0.2,
-          ease: "power2.in",
-        });
-      } else if (fromLayout === "mobile-focus" && toLayout === "mobile-normal") {
-        // Mobile focus to normal - simplified
-        tl.fromTo(
-          [topRowRef.current, bottomRowRef.current],
-          {
+        if (fromLayout === "mobile-normal" && toLayout === "mobile-focus") {
+          // Mobile normal to focus - simplified
+          tl.to([topRowRef.current, bottomRowRef.current], {
             opacity: 0,
-          },
-          {
-            opacity: 1,
             duration: 0.2,
-            ease: "power2.out",
-          }
-        );
-      } else if (fromLayout === "desktop-normal" && toLayout === "desktop-focus") {
-        // Desktop normal to focus
-        tl.to(desktopLeftRef.current, {
-          opacity: 0,
-          x: -50,
-          duration: 0.3,
-          ease: "power2.in",
-        }).to(
-          desktopRightRef.current,
-          {
-            x: 0,
-            duration: 0.3,
-            ease: "power2.out",
-          },
-          "-=0.1"
-        );
-      } else if (fromLayout === "desktop-focus" && toLayout === "desktop-normal") {
-        // Desktop focus to normal
-        tl.fromTo(
-          desktopLeftRef.current,
-          {
+            ease: "power2.in",
+          });
+        } else if (
+          fromLayout === "mobile-focus" &&
+          toLayout === "mobile-normal"
+        ) {
+          // Mobile focus to normal - simplified
+          tl.fromTo(
+            [topRowRef.current, bottomRowRef.current],
+            {
+              opacity: 0,
+            },
+            {
+              opacity: 1,
+              duration: 0.2,
+              ease: "power2.out",
+            }
+          );
+        } else if (
+          fromLayout === "desktop-normal" &&
+          toLayout === "desktop-focus"
+        ) {
+          // Desktop normal to focus
+          tl.to(desktopLeftRef.current, {
             opacity: 0,
             x: -50,
-          },
-          {
-            opacity: 1,
-            x: 0,
-            duration: 0.4,
-            ease: "back.out(1.7)",
-          }
-        );
-      }
-    });
-  }, []);
+            duration: 0.3,
+            ease: "power2.in",
+          }).to(
+            desktopRightRef.current,
+            {
+              x: 0,
+              duration: 0.3,
+              ease: "power2.out",
+            },
+            "-=0.1"
+          );
+        } else if (
+          fromLayout === "desktop-focus" &&
+          toLayout === "desktop-normal"
+        ) {
+          // Desktop focus to normal
+          tl.fromTo(
+            desktopLeftRef.current,
+            {
+              opacity: 0,
+              x: -50,
+            },
+            {
+              opacity: 1,
+              x: 0,
+              duration: 0.4,
+              ease: "back.out(1.7)",
+            }
+          );
+        }
+      });
+    },
+    []
+  );
 
   // Handle focus mode toggle with animation
   const toggleFocusMode = useCallback(() => {
     pulse("focus");
-    
+    onToggleFooter();
+
     // Update state immediately for mobile, with animation for desktop
     if (isMobile) {
       setFocusMode(!focusMode);
     } else {
       const currentLayout = focusMode ? "desktop-focus" : "desktop-normal";
       const newLayout = focusMode ? "desktop-normal" : "desktop-focus";
-      
+
       animateLayoutChange(currentLayout, newLayout).then(() => {
         setFocusMode(!focusMode);
       });
@@ -278,7 +298,9 @@ export const Navbar = () => {
           "-=0.2"
         )
         .fromTo(
-          desktopRightRef.current ? Array.from(desktopRightRef.current.querySelectorAll("button")) : [],
+          desktopRightRef.current
+            ? Array.from(desktopRightRef.current.querySelectorAll("button"))
+            : [],
           {
             opacity: 0,
             scale: 0.8,
@@ -296,21 +318,24 @@ export const Navbar = () => {
   }, [mounted, isMobile]);
 
   // Button hover animations
-  const handleButtonHover = useCallback((el: HTMLButtonElement, isEntering: boolean) => {
-    if (isEntering) {
-      gsap.to(el, {
-        scale: 1.05,
-        duration: 0.2,
-        ease: "power2.out",
-      });
-    } else {
-      gsap.to(el, {
-        scale: 1,
-        duration: 0.2,
-        ease: "power2.out",
-      });
-    }
-  }, []);
+  const handleButtonHover = useCallback(
+    (el: HTMLButtonElement, isEntering: boolean) => {
+      if (isEntering) {
+        gsap.to(el, {
+          scale: 1.05,
+          duration: 0.2,
+          ease: "power2.out",
+        });
+      } else {
+        gsap.to(el, {
+          scale: 1,
+          duration: 0.2,
+          ease: "power2.out",
+        });
+      }
+    },
+    []
+  );
 
   // Early return for SSR/hydration mismatch prevention
   if (!mounted || !theme) {
@@ -349,17 +374,17 @@ export const Navbar = () => {
             <Image
               alt="logo"
               src="/logo_dark.svg"
-              width={40}
-              height={20}
+              width={50}
+              height={30}
               className="hidden dark:block h-auto w-auto max-h-3"
               priority
             />
             <Image
               alt="logo"
               src="/logo_Light.svg"
-              width={40}
-              height={20}
-              className="dark:hidden h-auto w-auto max-h-3"
+              width={50}
+              height={30}
+              className="dark:hidden h-auto w-auto max-h-3.5"
               priority
             />
           </div>
@@ -395,7 +420,9 @@ export const Navbar = () => {
               size="icon"
               onClick={toggleTheme}
               className={`${buttonClass} flex items-center justify-center`}
-              aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
+              aria-label={`Switch to ${
+                theme === "dark" ? "light" : "dark"
+              } theme`}
             >
               {theme === "dark" ? (
                 <Moon
@@ -440,12 +467,16 @@ export const Navbar = () => {
       <nav
         ref={navRef}
         className="w-full leading-none flex items-center justify-center px-4 py-2 max-h-[24px]"
-        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
       >
-        <div 
-          ref={focusCenterRef} 
+        <div
+          ref={focusCenterRef}
           className="flex items-center gap-x-3"
-          style={{ opacity: 1, visibility: 'visible' }}
+          style={{ opacity: 1, visibility: "visible" }}
         >
           <Button
             size="icon"
@@ -503,20 +534,20 @@ export const Navbar = () => {
           ref={desktopLeftRef}
           className="flex items-center gap-x-2.5 min-w-0 flex-1"
         >
-          <div ref={logoRef} className="flex-shrink-0">
+          <div ref={logoRef} className="flex-shrink-0 flex items-center mb-0.5">
             <Image
               alt="logo"
               src="/logo_dark.svg"
-              height={40}
-              width={80}
+              height={30}
+              width={60}
               className="hidden dark:block h-auto"
               priority
             />
             <Image
               alt="logo"
               src="/logo_Light.svg"
-              height={40}
-              width={80}
+              height={30}
+              width={60}
               className="dark:hidden h-auto"
               priority
             />
@@ -594,7 +625,9 @@ export const Navbar = () => {
                 size="icon"
                 onClick={toggleTheme}
                 className={`${buttonClass} flex items-center justify-center`}
-                aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
+                aria-label={`Switch to ${
+                  theme === "dark" ? "light" : "dark"
+                } theme`}
               >
                 {theme === "dark" ? (
                   <Moon
@@ -620,7 +653,9 @@ export const Navbar = () => {
                   pulse("fullscreen");
                 }}
                 className={`${buttonClass} mr-5`}
-                aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+                aria-label={
+                  isFullscreen ? "Exit fullscreen" : "Enter fullscreen"
+                }
               >
                 {isFullscreen ? (
                   <Minimize

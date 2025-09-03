@@ -29,7 +29,7 @@ interface WorkspaceState {
   error: string | null;
   
   // Workspace actions
-  createWorkspace: (name: string, color: string) => Promise<void>;
+  createWorkspace: (name: string, color: string) => Promise<string>;
   deleteWorkspace: (id: string) => Promise<void>;
   setCurrentWorkspace: (id: string) => Promise<void>;
   renameWorkspace: (id: string, newName: string) => Promise<void>;
@@ -50,6 +50,24 @@ interface WorkspaceState {
 
 const DB_NAME = "WritingApp";
 const STORE_NAME = "workspaces";
+
+// Helper functions for localStorage persistence
+const persistCurrentWorkspace = (workspaceId: string | null) => {
+  if (typeof window !== 'undefined') {
+    if (workspaceId) {
+      localStorage.setItem('currentWorkspaceId', workspaceId);
+    } else {
+      localStorage.removeItem('currentWorkspaceId');
+    }
+  }
+};
+
+const getPersistedWorkspaceId = (): string | null => {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('currentWorkspaceId');
+  }
+  return null;
+};
 
 export const useWorkspace = create<WorkspaceState>((set, get) => ({
   workspaces: [],
@@ -77,14 +95,20 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
       set((state) => ({
         workspaces: [...state.workspaces, newWorkspace],
         currentWorkspaceId: newWorkspace.id,
+        currentPage: null, // Clear current page when creating new workspace
         error: null,
       }));
 
+      // Persist the new workspace ID
+      persistCurrentWorkspace(newWorkspace.id);
+
       await get().saveToStorage();
       console.log('Workspace created successfully');
+      return newWorkspace.id;
     } catch (error) {
       console.error('Failed to create workspace:', error);
       set({ error: 'Failed to create workspace' });
+      return "";
     }
   },
 
@@ -93,11 +117,17 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
       const { workspaces, currentWorkspaceId } = get();
       const updatedWorkspaces = workspaces.filter(ws => ws.id !== id);
       
-      const newCurrentId = currentWorkspaceId === id ? (updatedWorkspaces[0]?.id || null) : currentWorkspaceId;
-      const newCurrentWorkspace = updatedWorkspaces.find(ws => ws.id === newCurrentId);
-      const newCurrentPage = newCurrentWorkspace?.currentPageId 
-        ? newCurrentWorkspace.pages.find(p => p.id === newCurrentWorkspace.currentPageId) || null
-        : null;
+      let newCurrentId = null;
+      let newCurrentPage = null;
+
+      if (updatedWorkspaces.length > 0) {
+        // Switch to first available workspace if we deleted the current one
+        newCurrentId = currentWorkspaceId === id ? updatedWorkspaces[0].id : currentWorkspaceId;
+        const newCurrentWorkspace = updatedWorkspaces.find(ws => ws.id === newCurrentId);
+        newCurrentPage = newCurrentWorkspace?.currentPageId 
+          ? newCurrentWorkspace.pages.find(p => p.id === newCurrentWorkspace.currentPageId) || null
+          : null;
+      }
 
       set({
         workspaces: updatedWorkspaces,
@@ -106,7 +136,11 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
         error: null,
       });
 
+      // Update persistence
+      persistCurrentWorkspace(newCurrentId);
+
       await get().saveToStorage();
+      console.log('Workspace deleted successfully');
     } catch (error) {
       console.error('Failed to delete workspace:', error);
       set({ error: 'Failed to delete workspace' });
@@ -125,9 +159,13 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
 
         set({
           currentWorkspaceId: id,
-          currentPage,
+          currentPage, // This will be null for new/empty workspaces
           error: null,
         });
+
+        // Persist the workspace change
+        persistCurrentWorkspace(id);
+        await get().saveToStorage();
 
         console.log('Switched to workspace:', workspace.name);
       }
@@ -149,6 +187,7 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
       }));
 
       await get().saveToStorage();
+      console.log('Workspace renamed successfully');
     } catch (error) {
       console.error('Failed to rename workspace:', error);
       set({ error: 'Failed to rename workspace' });
@@ -231,6 +270,7 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
       }));
 
       await get().saveToStorage();
+      console.log('Page deleted successfully');
     } catch (error) {
       console.error('Failed to delete page:', error);
       set({ error: 'Failed to delete page' });
@@ -257,6 +297,7 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
         }));
 
         await get().saveToStorage();
+        console.log('Current page set successfully');
       }
     } catch (error) {
       console.error('Failed to set current page:', error);
@@ -282,7 +323,7 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
                     ? { 
                         ...p, 
                         content, 
-                        title: title || p.title,
+                        title: title !== undefined ? title : p.title,
                         updatedAt: Date.now(),
                         wordCount,
                         charCount,
@@ -297,7 +338,7 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
           ? { 
               ...state.currentPage, 
               content, 
-              title: title || state.currentPage.title,
+              title: title !== undefined ? title : state.currentPage.title,
               updatedAt: Date.now(),
               wordCount,
               charCount,
@@ -345,6 +386,7 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
       }));
 
       await get().saveToStorage();
+      console.log('Page duplicated successfully');
     } catch (error) {
       console.error('Failed to duplicate page:', error);
       set({ error: 'Failed to duplicate page' });
@@ -367,45 +409,57 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
         const workspaces = JSON.parse(data);
         console.log('Parsed workspaces:', workspaces);
         
-        const currentWorkspaceId = workspaces[0]?.id || null;
-        const currentWorkspace = workspaces.find((ws: Workspace) => ws.id === currentWorkspaceId);
+        if (workspaces.length === 0) {
+          // No workspaces exist - this will trigger the create workspace modal
+          set({ 
+            workspaces: [], 
+            currentWorkspaceId: null, 
+            currentPage: null,
+            isLoading: false 
+          });
+          persistCurrentWorkspace(null);
+          console.log('No workspaces found - will show create modal');
+          return;
+        }
+
+        // Try to restore the persisted workspace
+        const persistedId = getPersistedWorkspaceId();
+        const validWorkspace = workspaces.find((ws: Workspace) => ws.id === persistedId);
+        
+        const currentId = validWorkspace ? persistedId : workspaces[0].id;
+        const currentWorkspace = workspaces.find((ws: Workspace) => ws.id === currentId);
         const currentPage = currentWorkspace?.currentPageId 
           ? currentWorkspace.pages.find((p: Page) => p.id === currentWorkspace.currentPageId) || null
           : null;
 
         set({ 
           workspaces, 
-          currentWorkspaceId,
+          currentWorkspaceId: currentId,
           currentPage,
           isLoading: false,
           error: null,
         });
+
+        // Update persisted value if it changed
+        if (currentId !== persistedId) {
+          persistCurrentWorkspace(currentId);
+        }
         
         console.log('Workspaces loaded successfully');
       } else {
-        console.log('No existing data found, creating default workspace...');
+        console.log('No existing data found - will show create workspace modal');
         
-        const defaultWorkspace: Workspace = {
-          id: crypto.randomUUID(),
-          name: "My Workspace",
-          color: "bg-blue-300",
-          pages: [],
-          currentPageId: null,
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-        };
-
+        // No data exists - this will trigger the create workspace modal
         set({ 
-          workspaces: [defaultWorkspace], 
-          currentWorkspaceId: defaultWorkspace.id,
+          workspaces: [], 
+          currentWorkspaceId: null,
           currentPage: null,
           isLoading: false,
           error: null,
         });
-
-        console.log('Saving default workspace...');
-        await get().saveToStorage();
-        console.log('Default workspace created and saved');
+        
+        persistCurrentWorkspace(null);
+        console.log('No data found - will show create modal');
       }
     } catch (error) {
       console.error("Failed to load workspaces:", error);
