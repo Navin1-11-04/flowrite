@@ -19,13 +19,14 @@ export const Footer = () => {
         return;
       }
 
-      const diff = Math.floor((Date.now() - lastSaved) / 1000); 
+      const diff = Math.floor((Date.now() - lastSaved) / 1000);
+
       setIsSaved(diff <= 5);
 
       if (diff < 5) setTimeAgo("Just now");
-      else if (diff < 60) setTimeAgo(`${diff} sec ago`);
-      else if (diff < 3600) setTimeAgo(`${Math.floor(diff / 60)} min ago`);
-      else setTimeAgo(`${Math.floor(diff / 3600)} hr ago`);
+      else if (diff < 60) setTimeAgo(`${diff}s ago`);
+      else if (diff < 3600) setTimeAgo(`${Math.floor(diff / 60)}m ago`);
+      else setTimeAgo(`${Math.floor(diff / 3600)}h ago`);
     };
 
     updateStatus();
@@ -56,25 +57,38 @@ export const Footer = () => {
   }, [lastSaved, isSaved]);
 
   return (
-    <footer className="w-full flex items-center justify-between text-sm text-primary/50 font-medium p-6">
-      <div className="flex items-center gap-x-5">
-        <span>Words: {wordCount}</span>
-        <span>Chars: {charCount}</span>
+    <footer className="w-full flex items-center justify-between 
+      text-xs sm:text-sm text-primary/50 font-medium 
+      px-8 py-3 sm:px-4 sm:py-4 md:px-6 md:py-5">
+      
+      {/* Stats section */}
+      <div className="flex items-center gap-x-2 sm:gap-x-3 md:gap-x-5">
+        <span className="whitespace-nowrap">
+          <span className="hidden sm:inline">Words: </span>
+          <span className="sm:hidden font-medium">W : </span>
+          {wordCount}
+        </span>
+        <span className="whitespace-nowrap">
+          <span className="hidden sm:inline">Chars: </span>
+          <span className="sm:hidden font-medium">C : </span>
+          {charCount}
+        </span>
       </div>
 
-      <div className="flex items-center gap-x-2">
+      {/* Save status section */}
+      <div className="flex items-center gap-x-1 sm:gap-x-2">
         {isSaved ? (
           <CheckCircle
             ref={iconRef}
-            className="w-4 h-4 text-green-500 transition-transform duration-300"
+            className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 transition-transform duration-300 flex-shrink-0"
           />
         ) : (
           <XCircle
             ref={iconRef}
-            className="w-4 h-4 text-red-500 transition-transform duration-300"
+            className="w-3 h-3 sm:w-4 sm:h-4 text-red-500 transition-transform duration-300 flex-shrink-0"
           />
         )}
-        <span className="whitespace-nowrap">{timeAgo}</span>
+        <span className="font-medium whitespace-nowrap text-xs sm:text-sm">{timeAgo}</span>
       </div>
     </footer>
   );
