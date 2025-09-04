@@ -62,16 +62,17 @@ export const Footer = () => {
       px-8 py-3 sm:px-4 sm:py-4 md:px-6 md:py-5">
       
       {/* Stats section */}
-      <div className="flex items-center gap-x-2 sm:gap-x-3 md:gap-x-5">
+      <div className="flex items-center gap-x-0.5 sm:gap-x-1 md:gap-x-1">
         <span className="whitespace-nowrap">
-          <span className="hidden sm:inline">Words: </span>
+          <span className="hidden sm:inline">Words : </span>
           <span className="sm:hidden font-medium">W : </span>
           {wordCount}
         </span>
         <span className="whitespace-nowrap">
-          <span className="hidden sm:inline">Chars: </span>
-          <span className="sm:hidden font-medium">C : </span>
-          {charCount}
+          ({" "}{charCount}
+            <span className="hidden sm:inline"> chars</span>
+          <span className="sm:hidden font-medium"> c</span>
+         {" "})
         </span>
       </div>
 

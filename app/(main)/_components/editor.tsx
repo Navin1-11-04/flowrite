@@ -5,10 +5,12 @@ import { gsap } from "gsap";
 import { useEditorIntegration, usePageTitle } from "./useEditorIntegration";
 import { useWorkspace } from "@/store/useWorkspace";
 import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
 import { 
   FileText, 
   AlertCircle,
 } from "lucide-react";
+import { Label } from "@/components/ui/label";
 
 interface EditorProps {
   className?: string;
@@ -33,27 +35,25 @@ export function Editor({ className, focusMode = false }: EditorProps) {
     isLoading: workspaceLoading 
   } = useWorkspace();
 
-  // State for animated placeholders
+  // State for animated placeholders and content editor
   const [contentPlaceholderIndex, setContentPlaceholderIndex] = useState(0);
-  const [titleHasFocus, setTitleHasFocus] = useState(false);
   const [contentHasFocus, setContentHasFocus] = useState(false);
+  const [titleValue, setTitleValue] = useState("");
 
   // Refs for DOM manipulation
-  const titleEditorRef = useRef<HTMLDivElement | null>(null);
   const contentEditorRef = useRef<HTMLDivElement | null>(null);
   const contentPlaceholderRef = useRef<HTMLDivElement | null>(null);
-  const titleCaretRef = useRef<HTMLDivElement | null>(null);
   const contentCaretRef = useRef<HTMLDivElement | null>(null);
+  const titleInputRef = useRef<HTMLInputElement | null>(null);
 
   // Auto-save timeout
   const saveTimeout = useRef<number | null>(null);
 
-  // Sync with current page
+  // Sync title with current page
   useEffect(() => {
     if (currentPage) {
-      if (titleEditorRef.current) {
-        titleEditorRef.current.textContent = currentPage.title || "Untitled";
-      }
+      setTitleValue(currentPage.title || "Untitled");
+      
       if (contentEditorRef.current) {
         contentEditorRef.current.textContent = currentPage.content;
         if (contentPlaceholderRef.current) {
@@ -61,9 +61,8 @@ export function Editor({ className, focusMode = false }: EditorProps) {
         }
       }
     } else {
-      if (titleEditorRef.current) {
-        titleEditorRef.current.textContent = "Untitled";
-      }
+      setTitleValue("Untitled");
+      
       if (contentEditorRef.current) {
         contentEditorRef.current.textContent = "";
         if (contentPlaceholderRef.current) {
@@ -94,8 +93,8 @@ export function Editor({ className, focusMode = false }: EditorProps) {
     return () => tl.kill();
   }, [contentHasFocus]);
 
-  // Update caret position
-  const updateCaretPosition = (editorRef: React.RefObject<HTMLDivElement>, caretRef: React.RefObject<HTMLDivElement>, hasFocus: boolean, isTitle: boolean = false) => {
+  // Update caret position for content editor only
+  const updateCaretPosition = (editorRef: React.RefObject<HTMLDivElement>, caretRef: React.RefObject<HTMLDivElement>, hasFocus: boolean) => {
     if (!editorRef.current || !caretRef.current) return;
 
     const selection = window.getSelection();
@@ -124,24 +123,20 @@ export function Editor({ className, focusMode = false }: EditorProps) {
 
     span.parentNode?.removeChild(span);
 
-    // Adjust vertical position for title specifically
-    const verticalAdjustment = isTitle ? 0 : -2;
-    
-    caretRef.current.style.top = `${top + verticalAdjustment}px`;
+    caretRef.current.style.top = `${top - 2}px`;
     caretRef.current.style.left = `${left}px`;
     caretRef.current.style.height = `${Math.max(rect.height, 18)}px`;
     caretRef.current.style.opacity = "1";
   };
 
-  // Track selection changes
+  // Track selection changes for content editor only
   useEffect(() => {
     const handleSelectionChange = () => {
-      if (titleHasFocus) updateCaretPosition(titleEditorRef, titleCaretRef, titleHasFocus, true);
       if (contentHasFocus) updateCaretPosition(contentEditorRef, contentCaretRef, contentHasFocus);
     };
     document.addEventListener("selectionchange", handleSelectionChange);
     return () => document.removeEventListener("selectionchange", handleSelectionChange);
-  }, [titleHasFocus, contentHasFocus]);
+  }, [contentHasFocus]);
 
   // Debounced save function
   const debouncedSave = useCallback((title: string, content: string) => {
@@ -152,19 +147,27 @@ export function Editor({ className, focusMode = false }: EditorProps) {
     }, 800);
   }, [handleContentChange, updateTitle]);
 
-  // Handle title input
-  const handleTitleInput = (e: React.FormEvent<HTMLDivElement>) => {
-    const titleText = e.currentTarget.textContent?.trim() || "Untitled";
+  // Handle title input change
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newTitle = e.target.value;
+    setTitleValue(newTitle);
+    
     const contentText = contentEditorRef.current?.textContent || "";
+    debouncedSave(newTitle || "Untitled", contentText);
+  };
 
-    updateCaretPosition(titleEditorRef, titleCaretRef, titleHasFocus, true);
-    debouncedSave(titleText, contentText);
+  // Handle title key events
+  const handleTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      contentEditorRef.current?.focus();
+    }
   };
 
   // Handle content input
   const handleContentInput = (e: React.FormEvent<HTMLDivElement>) => {
     const contentText = e.currentTarget.textContent || "";
-    const titleText = titleEditorRef.current?.textContent?.trim() || "Untitled";
+    const titleText = titleValue || "Untitled";
 
     if (contentPlaceholderRef.current) {
       contentPlaceholderRef.current.style.display = contentText.length > 0 ? "none" : "block";
@@ -174,17 +177,7 @@ export function Editor({ className, focusMode = false }: EditorProps) {
     debouncedSave(titleText, contentText);
   };
 
-  // Focus handlers
-  const handleTitleFocus = () => {
-    setTitleHasFocus(true);
-    setTimeout(() => updateCaretPosition(titleEditorRef, titleCaretRef, true, true), 10);
-  };
-
-  const handleTitleBlur = () => {
-    setTitleHasFocus(false);
-    if (titleCaretRef.current) titleCaretRef.current.style.opacity = "0";
-  };
-
+  // Focus handlers for content editor
   const handleContentFocus = () => {
     setContentHasFocus(true);
     setTimeout(() => updateCaretPosition(contentEditorRef, contentCaretRef, true), 10);
@@ -197,9 +190,9 @@ export function Editor({ className, focusMode = false }: EditorProps) {
 
   // Auto-focus on new page creation
   useEffect(() => {
-    if (currentPage && !currentPage.title && titleEditorRef.current) {
+    if (currentPage && !currentPage.title && titleInputRef.current) {
       const timer = window.setTimeout(() => {
-        titleEditorRef.current?.focus();
+        titleInputRef.current?.focus();
       }, 100);
       return () => window.clearTimeout(timer);
     }
@@ -266,32 +259,27 @@ export function Editor({ className, focusMode = false }: EditorProps) {
   }
 
   return (
-    <div className={cn("h-full flex flex-col max-w-6xl mx-auto", className)}>
-      {/* Title Editor */}
-      <div className="relative py-4">
-        <div
-          ref={titleEditorRef}
-          contentEditable
-          suppressContentEditableWarning
-          onInput={handleTitleInput}
-          onBlur={handleTitleBlur}
-          onFocus={handleTitleFocus}
-          spellCheck={false}
-          className={cn(
-            "outline-none whitespace-pre-wrap break-words relative z-10 text-base md:text-lg font-semibold leading-tight",
-            focusMode && "text-center"
-          )}
-          style={{ caretColor: "transparent" }}
-        />
-        <div
-          ref={titleCaretRef}
-          className="absolute w-[3px] bg-yellow-400 rounded-sm"
-          style={{ top: 0, left: 0, opacity: 0, pointerEvents: "none", zIndex: 10 }}
-        />
-      </div>
+    <div className={cn("h-full flex flex-col max-w-[60rem] w-full", className)}>
+      {/* Title Input - Now positioned on the left */}
+      <div>
+  <Label htmlFor="title">Title</Label>
+  <Input
+    id="title"
+    ref={titleInputRef}
+    value={titleValue}
+    onChange={handleTitleChange}
+    onKeyDown={handleTitleKeyDown}
+    placeholder="Untitled"
+    type="text"
+    className={cn(
+      "text-base md:text-lg bg-transparent font-normal shadow-none focus-visible:ring-0 max-w-[230px]"
+    )}
+  />
+</div>
+
 
       {/* Content Editor */}
-      <div className="flex-1 min-h-0 relative">
+      <div className="flex-1 min-h-0 relative w-full">
         <div
           ref={contentPlaceholderRef}
           className="pointer-events-none absolute top-5.5 left-2 text-primary/50 select-none whitespace-pre-wrap text-lg md:text-3xl font-extralight"

@@ -139,7 +139,7 @@ const MainPage = () => {
         {/* Scrollable editor container */}
         <main
           ref={scrollContainerRef}
-          className="flex-1 h-full w-full leading-none my-[5vh] md:my-[15vh] overflow-y-auto place-items-center relative"
+          className="flex-1 h-full w-full leading-none my-[5vh] md:my-[10vh] overflow-y-auto place-items-center relative"
           style={{
             scrollbarGutter: "stable",
           }}
