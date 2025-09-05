@@ -8,6 +8,7 @@ import { CreateWorkspaceModal } from "./_components/create-workspace-modal";
 import { useWorkspace } from "@/store/useWorkspace";
 import { useSession } from "@/store/useSession";
 import gsap from "gsap";
+import ModeToggler from "./_components/mode-toggler";
 
 const MainPage = () => {
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
@@ -133,7 +134,7 @@ const MainPage = () => {
 
   return (
     <>
-      <div className="group w-full min-h-screen h-screen flex flex-col bg-background text-foreground p-5 gap-y-2 relative overflow-hidden">
+      <div className="group w-full min-h-screen h-screen flex flex-col bg-background text-foreground gap-y-2 relative overflow-hidden">
         <Navbar onToggleFooter={() => setShowFooter(!showFooter)} />
 
         {/* Scrollable editor container */}
@@ -145,8 +146,7 @@ const MainPage = () => {
           }}
         >
           <Editor />
-        </main>
-        
+        </main>        
         <div
           ref={footerRef}
           className="absolute bottom-0 left-0 z-20 right-0 translate-y-0 opacity-100"

@@ -6,10 +6,7 @@ import { useEditorIntegration, usePageTitle } from "./useEditorIntegration";
 import { useWorkspace } from "@/store/useWorkspace";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
-import { 
-  FileText, 
-  AlertCircle,
-} from "lucide-react";
+import { FileText, AlertCircle } from "lucide-react";
 import { Label } from "@/components/ui/label";
 
 interface EditorProps {
@@ -28,11 +25,11 @@ const CONTENT_PLACEHOLDERS = [
 export function Editor({ className, focusMode = false }: EditorProps) {
   const { currentPage, handleContentChange } = useEditorIntegration();
   const { updateTitle } = usePageTitle();
-  const { 
-    workspaces, 
-    currentWorkspaceId, 
+  const {
+    workspaces,
+    currentWorkspaceId,
     createPage,
-    isLoading: workspaceLoading 
+    isLoading: workspaceLoading,
   } = useWorkspace();
 
   // State for animated placeholders and content editor
@@ -53,16 +50,18 @@ export function Editor({ className, focusMode = false }: EditorProps) {
   useEffect(() => {
     if (currentPage) {
       setTitleValue(currentPage.title || "Untitled");
-      
+
       if (contentEditorRef.current) {
         contentEditorRef.current.textContent = currentPage.content;
         if (contentPlaceholderRef.current) {
-          contentPlaceholderRef.current.style.display = currentPage.content ? "none" : "block";
+          contentPlaceholderRef.current.style.display = currentPage.content
+            ? "none"
+            : "block";
         }
       }
     } else {
       setTitleValue("Untitled");
-      
+
       if (contentEditorRef.current) {
         contentEditorRef.current.textContent = "";
         if (contentPlaceholderRef.current) {
@@ -75,14 +74,21 @@ export function Editor({ className, focusMode = false }: EditorProps) {
   // Animated placeholders for content only
   useEffect(() => {
     if (!contentPlaceholderRef.current || !contentCaretRef.current) return;
-    if (contentHasFocus || (contentEditorRef.current?.textContent?.length || 0) > 0) return;
+    if (
+      contentHasFocus ||
+      (contentEditorRef.current?.textContent?.length || 0) > 0
+    )
+      return;
 
     const tl = gsap.timeline({ repeat: -1 });
     tl.to([contentPlaceholderRef.current, contentCaretRef.current], {
       opacity: 0,
       duration: 0.5,
       ease: "power1.inOut",
-      onComplete: () => setContentPlaceholderIndex((i) => (i + 1) % CONTENT_PLACEHOLDERS.length),
+      onComplete: () =>
+        setContentPlaceholderIndex(
+          (i) => (i + 1) % CONTENT_PLACEHOLDERS.length
+        ),
     }).to([contentPlaceholderRef.current, contentCaretRef.current], {
       opacity: 1,
       duration: 0.5,
@@ -94,7 +100,11 @@ export function Editor({ className, focusMode = false }: EditorProps) {
   }, [contentHasFocus]);
 
   // Update caret position for content editor only
-  const updateCaretPosition = (editorRef: React.RefObject<HTMLDivElement>, caretRef: React.RefObject<HTMLDivElement>, hasFocus: boolean) => {
+  const updateCaretPosition = (
+    editorRef: React.RefObject<HTMLDivElement>,
+    caretRef: React.RefObject<HTMLDivElement>,
+    hasFocus: boolean
+  ) => {
     if (!editorRef.current || !caretRef.current) return;
 
     const selection = window.getSelection();
@@ -132,33 +142,38 @@ export function Editor({ className, focusMode = false }: EditorProps) {
   // Track selection changes for content editor only
   useEffect(() => {
     const handleSelectionChange = () => {
-      if (contentHasFocus) updateCaretPosition(contentEditorRef, contentCaretRef, contentHasFocus);
+      if (contentHasFocus)
+        updateCaretPosition(contentEditorRef, contentCaretRef, contentHasFocus);
     };
     document.addEventListener("selectionchange", handleSelectionChange);
-    return () => document.removeEventListener("selectionchange", handleSelectionChange);
+    return () =>
+      document.removeEventListener("selectionchange", handleSelectionChange);
   }, [contentHasFocus]);
 
   // Debounced save function
-  const debouncedSave = useCallback((title: string, content: string) => {
-    if (saveTimeout.current) window.clearTimeout(saveTimeout.current);
-    saveTimeout.current = window.setTimeout(() => {
-      handleContentChange(content, title);
-      updateTitle(title || "Untitled");
-    }, 800);
-  }, [handleContentChange, updateTitle]);
+  const debouncedSave = useCallback(
+    (title: string, content: string) => {
+      if (saveTimeout.current) window.clearTimeout(saveTimeout.current);
+      saveTimeout.current = window.setTimeout(() => {
+        handleContentChange(content, title);
+        updateTitle(title || "Untitled");
+      }, 800);
+    },
+    [handleContentChange, updateTitle]
+  );
 
   // Handle title input change
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newTitle = e.target.value;
     setTitleValue(newTitle);
-    
+
     const contentText = contentEditorRef.current?.textContent || "";
     debouncedSave(newTitle || "Untitled", contentText);
   };
 
   // Handle title key events
   const handleTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       e.preventDefault();
       contentEditorRef.current?.focus();
     }
@@ -170,7 +185,8 @@ export function Editor({ className, focusMode = false }: EditorProps) {
     const titleText = titleValue || "Untitled";
 
     if (contentPlaceholderRef.current) {
-      contentPlaceholderRef.current.style.display = contentText.length > 0 ? "none" : "block";
+      contentPlaceholderRef.current.style.display =
+        contentText.length > 0 ? "none" : "block";
     }
 
     updateCaretPosition(contentEditorRef, contentCaretRef, contentHasFocus);
@@ -180,7 +196,10 @@ export function Editor({ className, focusMode = false }: EditorProps) {
   // Focus handlers for content editor
   const handleContentFocus = () => {
     setContentHasFocus(true);
-    setTimeout(() => updateCaretPosition(contentEditorRef, contentCaretRef, true), 10);
+    setTimeout(
+      () => updateCaretPosition(contentEditorRef, contentCaretRef, true),
+      10
+    );
   };
 
   const handleContentBlur = () => {
@@ -213,7 +232,12 @@ export function Editor({ className, focusMode = false }: EditorProps) {
   // Show loading state
   if (workspaceLoading) {
     return (
-      <div className={cn("flex items-center justify-center min-h-[60vh]", className)}>
+      <div
+        className={cn(
+          "flex items-center justify-center min-h-[60vh]",
+          className
+        )}
+      >
         <div className="text-center space-y-3">
           <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full mx-auto" />
           <p className="text-sm text-muted-foreground">Loading workspace...</p>
@@ -224,20 +248,32 @@ export function Editor({ className, focusMode = false }: EditorProps) {
 
   // Show empty state if no current page and workspace exists
   if (!currentPage && currentWorkspaceId) {
-    const currentWorkspace = workspaces.find(ws => ws.id === currentWorkspaceId);
-    
+    const currentWorkspace = workspaces.find(
+      (ws) => ws.id === currentWorkspaceId
+    );
+
     return (
-      <div className={cn("flex items-center justify-center min-h-[60vh]", className)}>
+      <div
+        className={cn(
+          "flex items-center justify-center min-h-[60vh]",
+          className
+        )}
+      >
         <div className="text-center space-y-4 max-w-md">
           <div className="space-y-2">
             <FileText className="w-12 h-12 mx-auto text-muted-foreground/50" />
             <h3 className="text-lg font-medium">No page selected</h3>
             <p className="text-sm text-muted-foreground">
-              Create your first page in <span className="font-medium">{currentWorkspace?.name}</span> to start writing.
+              Create your first page in{" "}
+              <span className="font-medium">{currentWorkspace?.name}</span> to
+              start writing.
             </p>
           </div>
-          
-          <button onClick={handleCreateFirstPage} className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors">
+
+          <button
+            onClick={handleCreateFirstPage}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+          >
             <FileText className="w-4 h-4" />
             Create First Page
           </button>
@@ -249,10 +285,17 @@ export function Editor({ className, focusMode = false }: EditorProps) {
   // Show error state if no workspace
   if (!currentWorkspaceId) {
     return (
-      <div className={cn("flex items-center justify-center min-h-[60vh]", className)}>
+      <div
+        className={cn(
+          "flex items-center justify-center min-h-[60vh]",
+          className
+        )}
+      >
         <div className="text-center space-y-3">
           <AlertCircle className="w-8 h-8 mx-auto text-orange-500" />
-          <p className="text-sm text-muted-foreground">No workspace available</p>
+          <p className="text-sm text-muted-foreground">
+            No workspace available
+          </p>
         </div>
       </div>
     );
@@ -261,28 +304,27 @@ export function Editor({ className, focusMode = false }: EditorProps) {
   return (
     <div className={cn("h-full flex flex-col max-w-[60rem] w-full", className)}>
       {/* Title Input - Now positioned on the left */}
-      <div>
-  <Label htmlFor="title">Title</Label>
-  <Input
-    id="title"
-    ref={titleInputRef}
-    value={titleValue}
-    onChange={handleTitleChange}
-    onKeyDown={handleTitleKeyDown}
-    placeholder="Untitled"
-    type="text"
-    className={cn(
-      "text-base md:text-lg bg-transparent font-normal shadow-none focus-visible:ring-0 max-w-[230px]"
-    )}
-  />
-</div>
-
+      {/* <div>
+        <Label htmlFor="title">Title</Label>
+        <Input
+          id="title"
+          ref={titleInputRef}
+          value={titleValue}
+          onChange={handleTitleChange}
+          onKeyDown={handleTitleKeyDown}
+          placeholder="Untitled"
+          type="text"
+          className={cn(
+            "text-base md:text-lg bg-transparent font-normal shadow-none focus-visible:ring-0 max-w-[230px]"
+          )}
+        />
+      </div> */}
 
       {/* Content Editor */}
       <div className="flex-1 min-h-0 relative w-full">
         <div
           ref={contentPlaceholderRef}
-          className="pointer-events-none absolute top-5.5 left-2 text-primary/50 select-none whitespace-pre-wrap text-lg md:text-3xl font-extralight"
+          className="pointer-events-none absolute top-5.5 left-2 text-ring select-none whitespace-pre-wrap text-lg md:text-2xl font-extralight"
         >
           {CONTENT_PLACEHOLDERS[contentPlaceholderIndex]}
         </div>
@@ -295,7 +337,7 @@ export function Editor({ className, focusMode = false }: EditorProps) {
           onFocus={handleContentFocus}
           spellCheck={false}
           className={cn(
-            "min-h-full outline-none whitespace-pre-wrap break-words relative z-10 py-4 text-lg md:text-3xl font-normal leading-relaxed",
+            "min-h-full outline-none whitespace-pre-wrap break-words relative z-10 py-4 text-lg md:text-2xl font-normal leading-relaxed",
             focusMode && "text-center"
           )}
           style={{ caretColor: "transparent" }}
@@ -303,7 +345,13 @@ export function Editor({ className, focusMode = false }: EditorProps) {
         <div
           ref={contentCaretRef}
           className="absolute w-[3px] bg-yellow-400 rounded-sm"
-          style={{ top: 0, left: 0, opacity: 0, pointerEvents: "none", zIndex: 10 }}
+          style={{
+            top: 0,
+            left: 0,
+            opacity: 0,
+            pointerEvents: "none",
+            zIndex: 10,
+          }}
         />
       </div>
     </div>

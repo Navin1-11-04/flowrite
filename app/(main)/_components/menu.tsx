@@ -12,7 +12,7 @@ import {
   DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useWorkspace } from "@/store/useWorkspace";
-import { Ellipsis, History, Download, HelpCircle, FileText, ChevronRight } from "lucide-react";
+import { Ellipsis, History, Download, HelpCircle, FileText, ChevronRight, EllipsisVertical } from "lucide-react";
 import { RefObject, useState } from "react";
 import { HistoryDialog } from "./history";
 
@@ -50,23 +50,23 @@ export const Menu = ({ pulse, iconRefs }: MenuProps) => {
         <DropdownMenuTrigger asChild>
           <Button
             size="icon"
-            variant="outline"
+            variant="secondary"
             onClick={() => pulse("ellipsis")}
-            className="shadow-none rounded-full max-h-7"
+            className="shadow-none rounded-full"
           >
-            <Ellipsis
+            <EllipsisVertical
               ref={(el) => {
                 if (iconRefs.current) {
                   iconRefs.current["ellipsis"] = el;
                 }
               }}
-              className="w-5 h-5"
+              className="w-4 h-4"
             />
           </Button>
         </DropdownMenuTrigger>
 
         <DropdownMenuContent 
-          className="w-48 shadow-none" 
+          className="w-60 shadow-none" 
           side="bottom" 
           align="end"
           sideOffset={10} 
@@ -77,7 +77,7 @@ export const Menu = ({ pulse, iconRefs }: MenuProps) => {
             className="flex items-center gap-2 cursor-pointer my-1 text-muted-foreground hover:text-foreground"
           >
             <History className="w-4 h-4 text-inherit" /> 
-            Pages & History
+            History
           </DropdownMenuItem>
 
           <DropdownMenuSeparator />
@@ -85,7 +85,7 @@ export const Menu = ({ pulse, iconRefs }: MenuProps) => {
           <DropdownMenuSub>
             <DropdownMenuSubTrigger className="flex items-center gap-2 cursor-pointer my-1 text-muted-foreground hover:text-foreground">
               <Download className="w-4 h-4 text-inherit" />
-              Export Current Page
+              Export Page
               <ChevronRight className="w-3 h-3 ml-auto" />
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent>

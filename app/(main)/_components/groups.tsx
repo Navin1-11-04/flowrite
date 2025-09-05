@@ -129,7 +129,7 @@ export function Groups() {
       <DropdownMenu onOpenChange={handleOpenChange}>
         <DropdownMenuTrigger
           ref={triggerRef}
-          className="flex items-center bg-background outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md px-1 py-1 transition-all duration-200 ease-out"
+          className="flex items-center bg-background outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md transition-all duration-200 ease-out"
           onClick={handleTriggerClick}
           onMouseEnter={() => handleTriggerHover(true)}
           onMouseLeave={() => handleTriggerHover(false)}
@@ -142,7 +142,7 @@ export function Groups() {
             )}
           />
           <div className="flex items-center text-foreground min-w-0">
-            <h1 className="text-xs font-medium md:font-[450] md:text-sm truncate max-w-20 sm:max-w-25 md:max-w-32 transition-colors duration-200">
+            <h1 className="text-xs font-medium md:font-[450] md:text-sm truncate max-w-20 sm:max-w-25 transition-colors duration-200">
               {currentWorkspace.name}
             </h1>
             <ChevronsUpDown
@@ -153,10 +153,10 @@ export function Groups() {
         </DropdownMenuTrigger>
 
         <DropdownMenuContent
-          className="w-36 md:w-40 animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95"
+          className="w-40 md:w-60 animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95"
           side="bottom"
           align="start"
-          sideOffset={10}
+          sideOffset={16}
           alignOffset={-12}
         >
           <DropdownMenuLabel className="text-xs text-muted-foreground px-2 py-1.5">
@@ -167,7 +167,7 @@ export function Groups() {
             <DropdownMenuItem
               key={workspace.id}
               className={cn(
-                "flex items-center gap-2 md:gap-2.5 my-1 text-muted-foreground hover:text-foreground cursor-pointer transition-all duration-200 ease-out hover:bg-accent/50 group",
+                "flex items-center gap-2 md:gap-3 my-1 text-muted-foreground hover:text-foreground cursor-pointer transition-all duration-200 ease-out hover:bg-accent/50 group",
                 workspace.id === currentWorkspaceId && "text-foreground font-[450] bg-accent"
               )}
               style={{ animationDelay: `${index * 50}ms` }}
@@ -180,29 +180,29 @@ export function Groups() {
                 )} 
               />
               <p className="text-xs md:text-sm truncate flex-1">{workspace.name}</p>
-              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <div className="flex items-center gap-x-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-5 w-5"
+                  className="h-5 w-5 text-muted-foreground hover:text-foreground"
                   onClick={(e) => {
                     e.stopPropagation();
                     openRenameDialog(workspace);
                   }}
                 >
-                  <Edit3 className="w-3 h-3" />
+                  <Edit3 className="size-4 text-inherit" />
                 </Button>
                 {/* Allow deletion of any workspace - no restriction */}
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-5 w-5 text-red-500 hover:text-red-600"
+                  className="h-5 w-5 text-muted-foreground hover:text-red-600"
                   onClick={(e) => {
                     e.stopPropagation();
                     openDeleteDialog(workspace);
                   }}
                 >
-                  <Trash className="w-3 h-3" />
+                  <Trash className="size-4 text-inherit" />
                 </Button>
               </div>
             </DropdownMenuItem>
