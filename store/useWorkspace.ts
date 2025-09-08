@@ -117,8 +117,8 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
       const { workspaces, currentWorkspaceId } = get();
       const updatedWorkspaces = workspaces.filter(ws => ws.id !== id);
       
-      let newCurrentId = null;
-      let newCurrentPage = null;
+      let newCurrentId: string | null = null;
+      let newCurrentPage: Page | null = null;
 
       if (updatedWorkspaces.length > 0) {
         // Switch to first available workspace if we deleted the current one
@@ -246,11 +246,11 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
       if (!workspace) return;
 
       const updatedPages = workspace.pages.filter(p => p.id !== pageId);
-      const newCurrentPageId = currentPage?.id === pageId 
+      const newCurrentPageId: string | null = currentPage?.id === pageId 
         ? (updatedPages[0]?.id || null)
         : workspace.currentPageId;
 
-      const newCurrentPage = newCurrentPageId 
+      const newCurrentPage: Page | null = newCurrentPageId 
         ? updatedPages.find(p => p.id === newCurrentPageId) || null
         : null;
 
