@@ -140,7 +140,7 @@ export class IconAnimations {
 
     gsap.set(element, { transformOrigin: "50% 50%" });
 
-    return gsap.to(element, {
+    return gsap.timeline().to(element, {
       rotate: `+=${rotation}`,
       duration,
       ease,
