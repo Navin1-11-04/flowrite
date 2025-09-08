@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { FileText, AlertCircle, Paperclip, FolderPlus } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { CreateWorkspaceModal } from "./create-workspace-modal";
+import { Button } from "@/components/ui/button";
 
 interface EditorProps {
   className?: string;
@@ -324,6 +325,13 @@ useEffect(() => {
           <p className="text-sm text-muted-foreground">
             No workspace available
           </p>
+          <Button
+  size="default"
+  variant="default"
+  onClick={() => window.location.reload()}
+>
+ Create Workspace
+</Button>
         </div>
       </div>
     );
