@@ -21,6 +21,7 @@ const MainPage = () => {
   // Track initialization to prevent multiple calls
   const [initialized, setInitialized] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [hasUserDeclinedModal, setHasUserDeclinedModal] = useState(false);
 
   // Initialize app on mount
   useEffect(() => {
@@ -49,19 +50,35 @@ const MainPage = () => {
     initialize();
   }, [initialized, loadWorkspaces, startSession]);
 
-  // Check if we need to show create workspace modal (only when user first visits and has no workspaces)
+  // Check if we need to show create workspace modal
   useEffect(() => {
     if (initialized && !isLoading && workspaces.length === 0 && !currentWorkspaceId && !error) {
-      // Only show modal on first visit - if user cancels, they can use the Editor's create workspace button
+      // Only show modal on first visit and if user hasn't declined
       const hasSeenModal = localStorage.getItem('hasSeenCreateWorkspaceModal');
-      if (!hasSeenModal) {
+      if (!hasSeenModal && !hasUserDeclinedModal) {
         setShowCreateModal(true);
-        localStorage.setItem('hasSeenCreateWorkspaceModal', 'true');
       }
     } else {
       setShowCreateModal(false);
     }
-  }, [initialized, isLoading, workspaces.length, currentWorkspaceId, error]);
+  }, [initialized, isLoading, workspaces.length, currentWorkspaceId, error, hasUserDeclinedModal]);
+
+  // Handle modal close - differentiate between successful creation and cancellation
+  const handleModalChange = (open: boolean) => {
+    if (!open) {
+      // Modal is closing
+      if (workspaces.length === 0) {
+        // User canceled without creating workspace
+        setHasUserDeclinedModal(true);
+        // Only set the localStorage flag if they actually canceled
+        localStorage.setItem('hasSeenCreateWorkspaceModal', 'true');
+      } else {
+        // Workspace was created successfully, mark as seen
+        localStorage.setItem('hasSeenCreateWorkspaceModal', 'true');
+      }
+    }
+    setShowCreateModal(open);
+  };
 
   // Handle footer visibility with animation
   useEffect(() => {
@@ -158,10 +175,10 @@ const MainPage = () => {
         </div>
       </div>
 
-      {/* Create Workspace Modal - only show on first visit */}
+      {/* Create Workspace Modal - show on first visit or when explicitly requested */}
       <CreateWorkspaceModal 
         open={showCreateModal} 
-        onOpenChange={setShowCreateModal}
+        onOpenChange={handleModalChange}
       />
     </>
   );
