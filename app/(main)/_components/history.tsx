@@ -98,13 +98,12 @@ export function HistoryDialog({ open, onOpenChange }: HistoryDialogProps) {
     onOpenChange(false);
   };
 
-  const handleNewPage = async () => {
-    const pageId = await createPage();
-    if (pageId) {
-      onOpenChange(false);
-    }
-  };
-
+const handleNewPage = async () => {
+  const pageId = await createPage("Untitled"); // ✅ Provide the required title parameter
+  if (pageId) {
+    onOpenChange(false);
+  }
+};
   const handleDeletePage = async (pageId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (confirm("Are you sure you want to delete this page? This action cannot be undone.")) {
