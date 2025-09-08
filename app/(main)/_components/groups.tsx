@@ -1,24 +1,28 @@
+"use client";
+
 import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuLabel,
-} from "@/components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+} from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { ChevronsUpDown, Plus, Trash, Edit3, AlertTriangle } from "lucide-react";
-import { useRef, useState } from "react";
+import {
+  ChevronsUpDown,
+  Plus,
+  Trash,
+  Loader2,
+  FolderPlus,
+  Check,
+  List,
+} from "lucide-react";
+import { useState, useRef, useEffect } from "react";
 import { gsap } from "gsap";
 import { useWorkspace } from "@/store/useWorkspace";
 
@@ -30,299 +34,280 @@ const colorOptions = [
   { name: "Blue", class: "bg-blue-300" },
   { name: "Purple", class: "bg-purple-300" },
   { name: "Pink", class: "bg-pink-300" },
+  { name: "Indigo", class: "bg-indigo-300" },
+  { name: "Cyan", class: "bg-cyan-300" },
 ];
 
 export function Groups() {
-  const { 
-    workspaces, 
-    currentWorkspaceId, 
-    createWorkspace, 
-    deleteWorkspace, 
+  const {
+    workspaces,
+    currentWorkspaceId,
+    createWorkspace,
+    deleteWorkspace,
     setCurrentWorkspace,
     renameWorkspace,
     isLoading,
   } = useWorkspace();
 
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
-  const [selectedColor, setSelectedColor] = useState(colorOptions[0].class);
-  const [workspaceToRename, setWorkspaceToRename] = useState<string | null>(null);
-  const [workspaceToDelete, setWorkspaceToDelete] = useState<string | null>(null);
+  const [selectedColor, setSelectedColor] = useState(colorOptions[0]);
+  const [isCreating, setIsCreating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const triggerRef = useRef<HTMLButtonElement>(null);
   const chevronRef = useRef<SVGSVGElement>(null);
-  const indicatorRef = useRef<HTMLSpanElement>(null);
+  const editInputRef = useRef<HTMLInputElement>(null);
 
-  const currentWorkspace = workspaces.find(ws => ws.id === currentWorkspaceId);
+  const currentWorkspace = workspaces.find((ws) => ws.id === currentWorkspaceId);
 
-  const handleTriggerClick = () => {
-    if (chevronRef.current) {
-      gsap.to(chevronRef.current, { rotate: 180, duration: 0.3, ease: "power2.out" });
+  useEffect(() => {
+    if (isEditing && editInputRef.current) {
+      editInputRef.current.focus();
+      editInputRef.current.select();
     }
-    if (indicatorRef.current) {
-      gsap.to(indicatorRef.current, { scale: 1.1, duration: 0.2, ease: "power2.out", yoyo: true, repeat: 1 });
-    }
-  };
-
-  const handleTriggerHover = (isEntering: boolean) => {
-    if (triggerRef.current) {
-      gsap.to(triggerRef.current, { scale: isEntering ? 1.02 : 1, duration: 0.2, ease: "power2.out" });
-    }
-  };
+  }, [isEditing]);
 
   const handleOpenChange = (open: boolean) => {
+    setIsOpen(open);
     if (!open && chevronRef.current) {
       gsap.to(chevronRef.current, { rotate: 0, duration: 0.3, ease: "power2.out" });
+    } else if (open && chevronRef.current) {
+      gsap.to(chevronRef.current, { rotate: 180, duration: 0.3, ease: "power2.out" });
     }
   };
 
-  const handleCreateWorkspace = async () => {
+  const handleRename = async () => {
+    if (currentWorkspace && editName.trim() && editName !== currentWorkspace.name) {
+      await renameWorkspace(currentWorkspace.id, editName.trim());
+    }
+    setIsEditing(false);
+  };
+
+  const handleCreate = async () => {
     if (newWorkspaceName.trim()) {
-      await createWorkspace(newWorkspaceName.trim(), selectedColor);
-      setNewWorkspaceName("");
-      setSelectedColor(colorOptions[0].class);
-      setIsCreateDialogOpen(false);
+      setIsCreating(true);
+      try {
+        await createWorkspace(newWorkspaceName.trim(), selectedColor.class);
+        setNewWorkspaceName("");
+        setSelectedColor(colorOptions[0]);
+        setIsOpen(false);
+      } finally {
+        setIsCreating(false);
+      }
     }
   };
 
-  const handleRenameWorkspace = async () => {
-    if (workspaceToRename && newWorkspaceName.trim()) {
-      await renameWorkspace(workspaceToRename, newWorkspaceName.trim());
-      setWorkspaceToRename(null);
-      setNewWorkspaceName("");
-      setIsRenameDialogOpen(false);
+  const handleDelete = async () => {
+    if (currentWorkspace && workspaces.length > 1) {
+      setIsDeleting(true);
+      try {
+        await deleteWorkspace(currentWorkspace.id);
+        setIsOpen(false);
+      } finally {
+        setIsDeleting(false);
+      }
     }
   };
 
-  const handleDeleteWorkspace = async () => {
-    if (workspaceToDelete) {
-      await deleteWorkspace(workspaceToDelete);
-      setWorkspaceToDelete(null);
-      setIsDeleteDialogOpen(false);
-    }
-  };
-
-  const openRenameDialog = (workspace: any) => {
-    setWorkspaceToRename(workspace.id);
-    setNewWorkspaceName(workspace.name);
-    setIsRenameDialogOpen(true);
-  };
-
-  const openDeleteDialog = (workspace: any) => {
-    setWorkspaceToDelete(workspace.id);
-    setIsDeleteDialogOpen(true);
+  const handleWorkspaceSelect = (workspaceId: string) => {
+    setCurrentWorkspace(workspaceId);
+    setIsOpen(false);
   };
 
   if (isLoading || !currentWorkspace) {
     return (
-      <div className="flex items-center">
-        <div className="w-4 h-4 mr-2.5 rounded-full bg-gray-300 animate-pulse" />
-        <div className="h-4 bg-gray-300 rounded w-20 animate-pulse" />
+      <div className="flex items-center space-x-2 animate-pulse">
+        <div className="w-4 h-4 rounded-full bg-muted" />
+        <div className="h-4 bg-muted rounded w-24" />
+        <div className="w-4 h-4 bg-muted rounded" />
       </div>
     );
   }
 
   return (
-    <>
-      <DropdownMenu onOpenChange={handleOpenChange}>
-        <DropdownMenuTrigger
-          ref={triggerRef}
-          className="flex items-center bg-background outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md transition-all duration-200 ease-out"
-          onClick={handleTriggerClick}
-          onMouseEnter={() => handleTriggerHover(true)}
-          onMouseLeave={() => handleTriggerHover(false)}
-        >
-          <span
-            ref={indicatorRef}
-            className={cn(
-              "w-3.5 h-3.5 md:w-4.5 md:h-4.5 mr-2 md:mr-2.5 rounded-full flex-shrink-0 transition-all duration-200 ease-out",
-              currentWorkspace.color
-            )}
-          />
-          <div className="flex items-center text-foreground min-w-0">
-            <h1 className="text-xs font-medium md:font-[450] md:text-sm truncate max-w-20 sm:max-w-25 transition-colors duration-200">
-              {currentWorkspace.name}
-            </h1>
+    <div className="flex items-center font-poppins">
+      <div
+        className={cn(
+          "w-4 h-4 md:w-4 md:h-4 mr-3 rounded-full flex-shrink-0",
+          currentWorkspace.color
+        )}
+      />
+      <div className="group mr-1 flex items-center min-w-0 flex-1 max-w-30 md:max-w-34 rounded-xs hover:bg-secondary transition-colors h-6">
+  {isEditing ? (
+    <Input
+      ref={editInputRef}
+      value={editName}
+      onChange={(e) => setEditName(e.target.value)}
+      onBlur={handleRename}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") handleRename();
+        if (e.key === "Escape") setIsEditing(false);
+      }}
+      className="text-sm md:text-base h-full font-medium truncate border-0 border-b-2 rounded-xs focus-visible:ring-0 focus-visible:border-primary/50 px-0 py-0 leading-relaxed"
+    />
+  ) : (
+    <h1
+      className="text-sm font-medium truncate cursor-pointer hover:text-primary transition-colors"
+      onClick={() => {
+        setIsEditing(true);
+        setEditName(currentWorkspace.name);
+      }}
+    >
+      {currentWorkspace.name}
+    </h1>
+  )}
+</div>
+      <Popover open={isOpen} onOpenChange={handleOpenChange}>
+        <PopoverTrigger asChild>
+          <Button
+            ref={triggerRef}
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 p-0 hover:bg-secondary hover:text-primary text-muted-foreground rounded-xs"
+            aria-expanded={isOpen}
+            aria-label="Open workspace selector"
+          >
             <ChevronsUpDown
               ref={chevronRef}
-              className="ml-2 md:ml-3 size-3 md:size-3.5 text-muted-foreground flex-shrink-0 transition-all duration-300 ease-out"
+              className="h-3 w-3 text-inherit transition-all duration-300 ease-out"
             />
-          </div>
-        </DropdownMenuTrigger>
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent
+  className="w-70 p-1 z-[999] rounded-lg shadow-lg backdrop-blur-xs font-poppins 
+             sm:max-w-[280px] max-w-[calc(100vw-2rem)] mx-auto"
+  align="end"
+  side="bottom"
+  sideOffset={16}
+  alignOffset={-60}
+  collisionPadding={12}
+>
+          <Command className="px-2 py-1">
+            <CommandInput placeholder="Search workspaces..." className="h-10 p-1" />
+            <CommandList className="max-h-64 overflow-y-auto py-1">
+              <CommandEmpty>No workspaces found.</CommandEmpty>
+              <CommandGroup heading="Workspaces" className="font-medium">
+                {workspaces.map((workspace) => (
+                  <CommandItem
+                    key={workspace.id}
+                    value={workspace.name}
+                    onSelect={() => handleWorkspaceSelect(workspace.id)}
+                    className={cn(
+                      "flex items-center justify-between gap-2 px-3 py-2 rounded-xs my-1",
+                      workspace.id === currentWorkspaceId && ""
+                    )}
+                  >
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <div
+                        className={cn(
+                          "w-3.5 h-3.5 rounded-full flex-shrink-0",
+                          workspace.color
+                        )}
+                      />
+                      <span className="truncate text-sm">{workspace.name}</span>
+                    </div>
+                    {workspace.id === currentWorkspaceId && (
+                      <Check className="h-4 w-4 text-primary" />
+                    )}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
 
-        <DropdownMenuContent
-          className="w-40 md:w-60 animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95"
-          side="bottom"
-          align="start"
-          sideOffset={16}
-          alignOffset={-12}
-        >
-          <DropdownMenuLabel className="text-xs text-muted-foreground px-2 py-1.5">
-            Workspaces
-          </DropdownMenuLabel>
+            <CommandSeparator />
 
-          {workspaces.map((workspace, index) => (
-            <DropdownMenuItem
-              key={workspace.id}
-              className={cn(
-                "flex items-center gap-2 md:gap-3 my-1 text-muted-foreground hover:text-foreground cursor-pointer transition-all duration-200 ease-out hover:bg-accent/50 group",
-                workspace.id === currentWorkspaceId && "text-foreground font-[450] bg-accent"
-              )}
-              style={{ animationDelay: `${index * 50}ms` }}
-              onClick={() => setCurrentWorkspace(workspace.id)}
-            >
-              <span 
-                className={cn(
-                  "w-3.5 h-3.5 md:w-4 md:h-4 rounded-full flex-shrink-0 transition-transform duration-200 group-hover:scale-110",
-                  workspace.color
-                )} 
-              />
-              <p className="text-xs md:text-sm truncate flex-1">{workspace.name}</p>
-              <div className="flex items-center gap-x-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-5 w-5 text-muted-foreground hover:text-foreground"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openRenameDialog(workspace);
-                  }}
-                >
-                  <Edit3 className="size-4 text-inherit" />
-                </Button>
-                {/* Allow deletion of any workspace - no restriction */}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-5 w-5 text-muted-foreground hover:text-red-600"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openDeleteDialog(workspace);
-                  }}
-                >
-                  <Trash className="size-4 text-inherit" />
-                </Button>
+            {/* Create new workspace */}
+            <div className="space-y-2">
+              <div className="flex p-2 items-center gap-2 text-sm font-medium text-primary">
+                <FolderPlus className="h-4 w-4" />
+                Create Workspace
               </div>
-            </DropdownMenuItem>
-          ))}
 
-          <DropdownMenuSeparator />
-
-          <DropdownMenuItem 
-            className="flex items-center text-muted-foreground focus:text-foreground hover:text-foreground transition-all duration-200 ease-out my-1 cursor-pointer group hover:bg-accent/50"
-            onClick={() => setIsCreateDialogOpen(true)}
-          >
-            <Plus className="size-3.5 md:size-4 mr-1 text-inherit transition-transform duration-200 group-hover:scale-110" strokeWidth={2.5} />
-            <p className="text-xs md:text-sm">New Workspace</p>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      {/* Create Workspace Dialog */}
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Create New Workspace</DialogTitle>
-            <DialogDescription>
-              Create a new workspace to organize your pages.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
               <Input
                 placeholder="Workspace name"
                 value={newWorkspaceName}
                 onChange={(e) => setNewWorkspaceName(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleCreateWorkspace()}
+                onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+                className="h-10 rounded-xs shadow-none"
               />
-            </div>
-            <div>
-              <p className="text-sm font-medium mb-2">Choose a color:</p>
-              <div className="flex gap-2 flex-wrap">
-                {colorOptions.map((color) => (
-                  <button
-                    key={color.class}
-                    className={cn(
-                      "w-8 h-8 rounded-full border-2 transition-all duration-200",
-                      color.class,
-                      selectedColor === color.class 
-                        ? "border-foreground scale-110" 
-                        : "border-border hover:border-muted-foreground hover:scale-105"
-                    )}
-                    onClick={() => setSelectedColor(color.class)}
-                  />
-                ))}
+
+              {/* Color selector */}
+              <div className="space-y-2">
+                <label className="text-xs text-primary px-2 font-medium">
+                  Label Color
+                </label>
+                <div className="flex flex-wrap gap-2 mt-2 px-2">
+                  {colorOptions.map((color) => (
+                    <button
+                      key={color.name}
+                      onClick={() => setSelectedColor(color)}
+                      className={cn(
+                        "w-5 h-5 rounded-full ring-1 ring-secondary transition-all hover:scale-110",
+                        color.class,
+                        selectedColor.name === color.name && "ring-2 ring-primary ring-offset-2 ring-offset-background"
+                      )}
+                      title={color.name}
+                    />
+                  ))}
+                </div>
               </div>
+              <CommandSeparator className="mt-3 mb-3"/>
+              <Button
+                variant="outline"
+                onClick={handleCreate}
+                disabled={!newWorkspaceName.trim() || isCreating}
+                className="w-full rounded-xs text-muted-foreground hover:text-foreground hover:bg-foreground shadow-none flex justify-start"
+                size="default"
+              >
+                {isCreating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-3 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="h-4 w-4 mr-3 stroke-2" />
+                    Create Workspace
+                  </>
+                )}
+              </Button>
             </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleCreateWorkspace} disabled={!newWorkspaceName.trim()}>
-              Create
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Rename Workspace Dialog */}
-      <Dialog open={isRenameDialogOpen} onOpenChange={setIsRenameDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Rename Workspace</DialogTitle>
-            <DialogDescription>
-              Enter a new name for your workspace.
-            </DialogDescription>
-          </DialogHeader>
-          <div>
-            <Input
-              placeholder="Workspace name"
-              value={newWorkspaceName}
-              onChange={(e) => setNewWorkspaceName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleRenameWorkspace()}
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsRenameDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleRenameWorkspace} disabled={!newWorkspaceName.trim()}>
-              Rename
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Workspace Dialog */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-red-500" />
-              Delete Workspace
-            </DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete this workspace? This action cannot be undone and will delete all pages within it.
-              {workspaces.length === 1 && (
-                <span className="block mt-2 text-orange-600 font-medium">
-                  This is your last workspace. You'll be prompted to create a new one after deletion.
-                </span>
-              )}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={handleDeleteWorkspace}>
-              Delete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+            {workspaces.length >= 1 && (
+              <>
+                <div className="py-3">
+                  <Button
+                    variant="outline"
+                    size="default"
+                    className="w-full rounded-xs flex justify-start text-muted-foreground hover:text-red-500 shadow-none bg-secondary"
+                    onClick={handleDelete}
+                    disabled={isDeleting || workspaces.length === 1}
+                  >
+                    {isDeleting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-3 animate-spin" />
+                        Deleting...
+                      </>
+                    ) : (
+                      <>
+                        <Trash className="h-4 w-4 mr-3" />
+                        Delete Workspace
+                      </>
+                    )}
+                  </Button>
+                  {workspaces.length === 1 && (
+                    <p className="text-xs text-muted-foreground mt-3 text-center">
+                      You need at least one workspace.
+                    </p>
+                  )}
+                </div>
+              </>
+            )}
+          </Command>
+        </PopoverContent>
+      </Popover>
+    </div>
   );
 }

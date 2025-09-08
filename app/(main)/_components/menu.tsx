@@ -15,6 +15,7 @@ import { useWorkspace } from "@/store/useWorkspace";
 import { Ellipsis, History, Download, HelpCircle, FileText, ChevronRight, EllipsisVertical } from "lucide-react";
 import { RefObject, useState } from "react";
 import { HistoryDialog } from "./history";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type MenuProps = {
   pulse: (id: string) => void;
@@ -34,13 +35,9 @@ export const Menu = ({ pulse, iconRefs }: MenuProps) => {
 
   const handleHistoryClick = () => {
     setIsHistoryOpen(true);
-    pulse("history");
   };
 
   const handleHelpClick = () => {
-    pulse("help");
-    // You can add help functionality here
-    // For example, open a help modal or redirect to documentation
     alert("Help & Support coming soon!");
   };
 
@@ -50,9 +47,9 @@ export const Menu = ({ pulse, iconRefs }: MenuProps) => {
         <DropdownMenuTrigger asChild>
           <Button
             size="icon"
-            variant="secondary"
+            variant="ghost"
             onClick={() => pulse("ellipsis")}
-            className="shadow-none rounded-full"
+            className="shadow-none rounded-sm"
           >
             <EllipsisVertical
               ref={(el) => {
@@ -60,72 +57,65 @@ export const Menu = ({ pulse, iconRefs }: MenuProps) => {
                   iconRefs.current["ellipsis"] = el;
                 }
               }}
-              className="w-4 h-4"
+              className="w-5 h-5"
             />
           </Button>
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent 
-          className="w-60 shadow-none" 
-          side="bottom" 
-          align="end"
-          sideOffset={10} 
-          alignOffset={0}
-        >
-          <DropdownMenuItem
-            onClick={handleHistoryClick}
-            className="flex items-center gap-2 cursor-pointer my-1 text-muted-foreground hover:text-foreground"
-          >
-            <History className="w-4 h-4 text-inherit" /> 
-            History
-          </DropdownMenuItem>
+       <DropdownMenuContent 
+  className="w-64 shadow-none px-2" 
+  side="bottom" 
+  align="end"
+  sideOffset={10} 
+  alignOffset={0}
+>
+  <h2 className="px-2 font-medium text-muted-foreground text-sm flex items-center py-1">
+    Menu
+  </h2>
 
-          <DropdownMenuSeparator />
+  <DropdownMenuItem
+    onClick={handleHistoryClick}
+    className="flex items-center gap-3 cursor-pointer my-1.5 text-primary hover:text-foreground hover:bg-secondary rounded-xs"
+  >
+    <History className="w-4 h-4" /> 
+    History
+  </DropdownMenuItem>
 
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger className="flex items-center gap-2 cursor-pointer my-1 text-muted-foreground hover:text-foreground">
-              <Download className="w-4 h-4 text-inherit" />
-              Export Page
-              <ChevronRight className="w-3 h-3 ml-auto" />
-            </DropdownMenuSubTrigger>
-            <DropdownMenuSubContent>
-              <DropdownMenuItem
-                onClick={() => handleExport('txt')}
-                disabled={!currentPage}
-                className="flex items-center gap-2 cursor-pointer my-1 text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <FileText className="w-4 h-4" />
-                Text File (.txt)
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => handleExport('html')}
-                disabled={!currentPage}
-                className="flex items-center gap-2 cursor-pointer my-1 text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <FileText className="w-4 h-4" />
-                HTML File (.html)
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => handleExport('md')}
-                disabled={!currentPage}
-                className="flex items-center gap-2 cursor-pointer my-1 text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <FileText className="w-4 h-4" />
-                Markdown (.md)
-              </DropdownMenuItem>
-            </DropdownMenuSubContent>
-          </DropdownMenuSub>
+  {/* Export Section */}
+  <div className="px-2 pt-2">
+  <h3 className="text-xs font-medium text-muted-foreground mb-2">Export Page</h3>
+  <div className="flex gap-2">
+    <Select onValueChange={(val: 'txt' | 'html' | 'md') => handleExport(val)}>
+      <SelectTrigger className="w-full">
+        <SelectValue placeholder="Choose format" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="txt">Text File (.txt)</SelectItem>
+        <SelectItem value="html">HTML File (.html)</SelectItem>
+        <SelectItem value="md">Markdown (.md)</SelectItem>
+      </SelectContent>
+    </Select>
+    <Button 
+      onClick={() => handleExport('txt')} 
+      className="flex-shrink-0"
+      disabled={!currentPage}
+    >
+      Export
+    </Button>
+  </div>
+</div>
 
-          <DropdownMenuSeparator />
+  <DropdownMenuSeparator className="my-2"/>
 
-          <DropdownMenuItem
-            onClick={handleHelpClick}
-            className="flex items-center gap-2 cursor-pointer my-1 text-muted-foreground hover:text-foreground"
-          >
-            <HelpCircle className="w-4 h-4 text-inherit" /> 
-            Help & Support
-          </DropdownMenuItem>
-        </DropdownMenuContent>
+  <DropdownMenuItem
+    onClick={handleHelpClick}
+    className="flex items-center gap-3 cursor-pointer my-1.5 text-primary hover:text-foreground hover:bg-secondary rounded-xs"
+  >
+    <HelpCircle className="w-4 h-4" /> 
+    Help & Support
+  </DropdownMenuItem>
+</DropdownMenuContent>
+
       </DropdownMenu>
 
       <HistoryDialog 

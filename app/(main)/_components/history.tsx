@@ -10,7 +10,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
 import { 
   FileText, 
   Calendar, 
@@ -22,6 +21,7 @@ import {
   Plus,
   Eye,
   MoreHorizontal,
+  ChevronDown,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -81,7 +81,7 @@ export function HistoryDialog({ open, onOpenChange }: HistoryDialogProps) {
     const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
 
     if (diffInHours < 1) {
-      const minutes = Math.floor(diffInHours * 60);
+      const minutes = Math.max(1, Math.floor(diffInHours * 60));
       return `${minutes}m ago`;
     } else if (diffInHours < 24) {
       return `${Math.floor(diffInHours)}h ago`;
@@ -122,38 +122,54 @@ export function HistoryDialog({ open, onOpenChange }: HistoryDialogProps) {
     exportPage(pageId, format);
   };
 
+  const getSortLabel = () => {
+    switch (sortBy) {
+      case "updated": return "Last Updated";
+      case "created": return "Date Created";
+      case "title": return "Title";
+      default: return "Sort";
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[80vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileText className="w-5 h-5" />
+      <DialogContent className="w-full sm:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden p-0">
+        {/* Header */}
+        <DialogHeader className="p-4 border-b sticky top-0 bg-background z-10">
+          <DialogTitle className="flex items-center gap-2 text-lg">
+            <FileText className="w-5 h-5 flex-shrink-0" />
             Page History
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm">
             View and manage all your pages in {currentWorkspace?.name || "this workspace"}.
           </DialogDescription>
-        </DialogHeader>
 
-        <div className="space-y-4 flex-1 min-h-0">
-          {/* Search and Controls */}
-          <div className="flex gap-2 items-center">
+          {/* Search + Controls */}
+          <div className="mt-3 flex flex-col sm:flex-row gap-2">
+            {/* Search Bar */}
             <div className="relative flex-1">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Search pages..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9"
+                className="pl-10 h-10"
               />
             </div>
+
+            {/* Sort Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  Sort: {sortBy === "updated" ? "Last Updated" : sortBy === "created" ? "Date Created" : "Title"}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-10 sm:min-w-[140px] justify-between"
+                >
+                  <span className="truncate">{getSortLabel()}</span>
+                  <ChevronDown className="w-4 h-4 ml-1" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem onClick={() => setSortBy("updated")}>
                   <Clock className="w-4 h-4 mr-2" />
                   Last Updated
@@ -168,75 +184,57 @@ export function HistoryDialog({ open, onOpenChange }: HistoryDialogProps) {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button onClick={handleNewPage} size="sm">
-              <Plus className="w-4 h-4 mr-2" />
+
+            {/* New Page Button */}
+            <Button
+              onClick={handleNewPage}
+              className="h-10 flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
               New Page
             </Button>
           </div>
+        </DialogHeader>
 
-          {/* Pages List */}
-          <ScrollArea className="flex-1 border rounded-lg">
+        {/* Scrollable Pages List */}
+        <ScrollArea className="flex-1 overflow-y-auto">
+          <div className="p-3 space-y-2">
             {filteredAndSortedPages.length === 0 ? (
               <div className="p-8 text-center text-muted-foreground">
-                {searchTerm ? (
-                  <div className="space-y-2">
-                    <Search className="w-8 h-8 mx-auto opacity-50" />
-                    <p>No pages found matching "{searchTerm}"</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <FileText className="w-8 h-8 mx-auto opacity-50" />
-                    <p>No pages in this workspace yet</p>
-                    <Button onClick={handleNewPage} variant="outline" size="sm">
-                      Create your first page
-                    </Button>
-                  </div>
-                )}
+                {searchTerm ? "No pages match your search." : "No pages yet. Create your first page."}
               </div>
             ) : (
-              <div className="p-2 space-y-1">
-                {filteredAndSortedPages.map((page) => (
-                  <div
-                    key={page.id}
-                    className="group flex items-center justify-between p-3 rounded-lg hover:bg-accent cursor-pointer transition-colors"
-                    onClick={() => handlePageSelect(page)}
-                  >
+              filteredAndSortedPages.map((page) => (
+                <div
+                  key={page.id}
+                  onClick={() => handlePageSelect(page)}
+                  className="group p-3 rounded-lg hover:bg-accent cursor-pointer transition-colors border border-transparent hover:border-border"
+                >
+                  <div className="flex justify-between items-start gap-3">
+                    {/* Page info */}
                     <div className="flex-1 min-w-0">
-                      <div className="gap-2">
-                        <h3 className="font-medium text-sm truncate">{page.title}</h3>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Badge variant="secondary" className="text-xs px-1.5 py-0.5">
-                            {page.wordCount} words
-                          </Badge>
-                          {page.charCount > 0 && (
-                            <Badge variant="outline" className="text-xs px-1.5 py-0.5">
-                              {page.charCount} chars
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                      
+                      <h3 className="font-medium text-sm truncate mb-1">
+                        {page.title || "Untitled"}
+                      </h3>
                       {page.content && (
-                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                          {page.content.substring(0, 100)}
-                          {page.content.length > 100 && "..."}
+                        <p className="text-xs text-muted-foreground line-clamp-1 mb-2">
+                          {page.content.replace(/\n/g, " ").trim().slice(0, 120)}
                         </p>
                       )}
-                      
-                      <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <Calendar className="w-3 h-3" />
-                          Created {formatDate(page.createdAt)}
+                          {formatDate(page.createdAt)}
                         </span>
                         <span className="flex items-center gap-1">
                           <Clock className="w-3 h-3" />
-                          Updated {formatDate(page.updatedAt)}
+                          {formatDate(page.updatedAt)}
                         </span>
                       </div>
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                       <Button
                         variant="ghost"
                         size="icon"
@@ -249,12 +247,17 @@ export function HistoryDialog({ open, onOpenChange }: HistoryDialogProps) {
                         <Eye className="w-4 h-4" />
                       </Button>
                       <DropdownMenu>
-                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <DropdownMenuTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8"
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             <MoreHorizontal className="w-4 h-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
+                        <DropdownMenuContent align="end" className="w-48">
                           <DropdownMenuItem onClick={(e) => handleDuplicatePage(page.id, e)}>
                             <Copy className="w-4 h-4 mr-2" />
                             Duplicate
@@ -264,18 +267,18 @@ export function HistoryDialog({ open, onOpenChange }: HistoryDialogProps) {
                             <Download className="w-4 h-4 mr-2" />
                             Export as TXT
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={(e) => handleExportPage(page.id, 'html', e)}>
-                            <Download className="w-4 h-4 mr-2" />
-                            Export as HTML
-                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={(e) => handleExportPage(page.id, 'md', e)}>
                             <Download className="w-4 h-4 mr-2" />
                             Export as Markdown
                           </DropdownMenuItem>
+                          <DropdownMenuItem onClick={(e) => handleExportPage(page.id, 'html', e)}>
+                            <Download className="w-4 h-4 mr-2" />
+                            Export as HTML
+                          </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem 
                             onClick={(e) => handleDeletePage(page.id, e)}
-                            className="text-red-600 focus:text-red-600"
+                            className="text-destructive focus:text-destructive"
                           >
                             <Trash2 className="w-4 h-4 mr-2" />
                             Delete
@@ -284,23 +287,19 @@ export function HistoryDialog({ open, onOpenChange }: HistoryDialogProps) {
                       </DropdownMenu>
                     </div>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))
             )}
-          </ScrollArea>
+          </div>
+        </ScrollArea>
 
-          {/* Footer Stats */}
-          {pages.length > 0 && (
-            <div className="flex justify-between items-center text-xs text-muted-foreground pt-2 border-t">
-              <span>
-                {filteredAndSortedPages.length} of {pages.length} pages
-              </span>
-              <span>
-                Total: {pages.reduce((sum, p) => sum + p.wordCount, 0)} words
-              </span>
-            </div>
-          )}
-        </div>
+        {/* Footer */}
+        {pages.length > 0 && (
+          <div className="px-4 py-2 border-t text-xs text-muted-foreground flex justify-between">
+            <span>{filteredAndSortedPages.length} of {pages.length} pages</span>
+            <span>{pages.reduce((sum, p) => sum + p.wordCount, 0).toLocaleString()} words total</span>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

@@ -12,6 +12,7 @@ import ModeToggler from "./mode-toggler";
 import ViewToggler from "./view-toggler";
 import FocusToggler from "./focus-toggler";
 import NewPage from "./new-page";
+import { useSession } from "@/store/useSession";
 
 interface NavbarProps {
   onToggleFooter: () => void;
@@ -19,10 +20,13 @@ interface NavbarProps {
 
 export const Navbar = ({ onToggleFooter }: NavbarProps) => {
   const { createPage } = useWorkspace();
+  const { lastSaved } = useSession();
 
   const [focusMode, setFocusMode] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [timeAgo, setTimeAgo] = useState("");
+  const [isSaved, setIsSaved] = useState(false);
 
   const navRef = useRef<HTMLElement>(null);
   const topRowRef = useRef<HTMLDivElement>(null);
@@ -33,6 +37,29 @@ export const Navbar = ({ onToggleFooter }: NavbarProps) => {
   const logoRef = useRef<HTMLDivElement>(null);
   const separatorRef = useRef<HTMLSpanElement>(null);
   const iconRefs = useRef<Record<string, SVGSVGElement | null>>({});
+
+   useEffect(() => {
+    const updateStatus = () => {
+      if (!lastSaved) {
+        setIsSaved(false);
+        setTimeAgo("Not saved yet");
+        return;
+      }
+
+      const diff = Math.floor((Date.now() - lastSaved) / 1000);
+
+      setIsSaved(diff <= 5);
+
+      if (diff < 5) setTimeAgo("Just now");
+      else if (diff < 60) setTimeAgo(`${diff}s ago`);
+      else if (diff < 3600) setTimeAgo(`${Math.floor(diff / 60)}m ago`);
+      else setTimeAgo(`${Math.floor(diff / 3600)}h ago`);
+    };
+
+    updateStatus();
+    const interval = setInterval(updateStatus, 1000);
+    return () => clearInterval(interval);
+  }, [lastSaved]);
 
   useEffect(() => {
     setMounted(true);
@@ -243,28 +270,29 @@ export const Navbar = ({ onToggleFooter }: NavbarProps) => {
 
   if (isMobile && !focusMode) {
     return (
-      <nav ref={navRef} className="w-full leading-none p-2">
+      <nav ref={navRef} className="w-full leading-none p-2 font-poppins">
         <div
           ref={topRowRef}
           className="flex items-center justify-between px-4 pb-2"
         >
           <div ref={logoRef} className="flex-shrink-0">
+            {/* <Image
+              alt="logo"
+              src="/logo_light.svg"
+              width={80}
+              height={40}
+              className="hidden dark:block h-auto w-auto max-h-6"
+              priority
+            />
             <Image
               alt="logo"
               src="/logo_dark.svg"
-              width={55}
-              height={30}
-              className="hidden dark:block h-auto w-auto max-h-3"
+              width={80}
+              height={40}
+              className="dark:hidden h-auto w-auto max-h-6"
               priority
-            />
-            <Image
-              alt="logo"
-              src="/logo_Light.svg"
-              width={55}
-              height={30}
-              className="dark:hidden h-auto w-auto max-h-3.5"
-              priority
-            />
+            /> */}
+            <span className="font-medium text-lg">Floww</span>
           </div>
           <Menu pulse={pulse} iconRefs={iconRefs} />
         </div>
@@ -299,7 +327,7 @@ export const Navbar = ({ onToggleFooter }: NavbarProps) => {
     return (
       <nav
         ref={navRef}
-        className="w-full leading-none flex items-center justify-center px-4 py-2"
+        className="w-full leading-none flex items-center justify-center px-4 py-2 font-poppins"
       >
         <div ref={focusCenterRef} className="flex items-center gap-x-3">
           <FocusToggler
@@ -318,32 +346,32 @@ export const Navbar = ({ onToggleFooter }: NavbarProps) => {
   return (
     <nav
       ref={navRef}
-      className="w-full leading-none flex items-center justify-between px-4 py-2 border-b border-secondary"
+      className="w-full leading-none flex items-center justify-between px-4 py-2 border-b border-primary/5 bg-background text-foreground font-poppins"
     >
       {!focusMode && (
         <div
           ref={desktopLeftRef}
-          className="flex items-center gap-x-2.5 min-w-0 flex-1"
+          className="flex items-center gap-x-2 min-w-0 flex-1"
         >
-          <div ref={logoRef} className="flex-shrink-0 flex items-center mb-0.5">
+          <div ref={logoRef} className="flex-shrink-0 flex items-center">
+            {/* <Image
+              alt="logo"
+              src="/logo_light.svg"
+              height={24}
+              width={24}
+              className="hidden dark:block h-auto object-cover"
+              priority
+            />
             <Image
               alt="logo"
               src="/logo_dark.svg"
-              height={30}
-              width={50}
-              className="hidden dark:block h-auto"
+              height={24}
+              width={24}
+              className="dark:hidden h-auto object-cover"
               priority
-            />
-            <Image
-              alt="logo"
-              src="/logo_Light.svg"
-              height={30}
-              width={50}
-              className="dark:hidden h-auto"
-              priority
-            />
+            /> */}
+            <span className="font-medium text-lg">Floww</span>
           </div>
-
           <span
             ref={separatorRef}
             className="rotate-110 bg-ring w-6 h-[1px] rounded-full flex-shrink-0"
@@ -356,9 +384,12 @@ export const Navbar = ({ onToggleFooter }: NavbarProps) => {
 
       <div
         ref={desktopRightRef}
-        className="flex items-center gap-x-3 flex-shrink-0"
-      >
-        <div className="flex items-center gap-x-3">
+        className="flex items-center gap-x-2 flex-shrink-0 font-poppins"
+      > 
+        <p className="text-muted-foreground text-xs mr-2">
+          Last Saved : {timeAgo}
+        </p>
+        <div className="flex items-center gap-x-2">
           <FocusToggler
             focusMode={focusMode}
             setFocusMode={setFocusMode}

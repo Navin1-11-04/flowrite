@@ -43,14 +43,14 @@ const FocusToggler = ({
 
   return (
     <Button
-      variant="outline"
+      variant="secondary"
       size="icon"
       aria-label={focusMode ? "Exit focus mode" : "Enter focus mode"}
-      className="rounded-full shadow-none text-foreground border-transparent hover:border-input hover:bg-transparent hover:text-muted-foreground transition-all duration-300 ease-in-out dark:bg-transparent dark:border-none"
+      className="rounded-sm shadow-none text-foreground bg-transparent hover:bg-secondary transition-all duration-300 ease-in-out"
       onClick={toggleFocusMode}
     >
       <span ref={iconRef} className="transition-all duration-300 ease-in-out">
-        {focusMode ? <EyeOff className="w-4 h-4 stroke-[2] text-inherit" /> : <Eye className="w-4 h-4 stroke-[2] text-inherit" />}
+        {focusMode ? <EyeOff className="w-4 h-4 md:w-5 md:h-5 stroke-[2] text-inherit" /> : <Eye className="w-4 h-4 md:w-5 md:h-5 stroke-[2] text-inherit" />}
       </span>
     </Button>
   );

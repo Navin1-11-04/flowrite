@@ -27,7 +27,7 @@ const ModeToggler = () => {
       <Button
         variant="outline"
         size="icon"
-        className="rounded-full shadow-none text-foreground border-transparent hover:border-input hover:bg-transparent hover:text-muted-foreground transition-all duration-300 ease-in-out"
+        className="rounded-sm shadow-none text-foreground border-transparent hover:border-input hover:bg-transparent hover:text-muted-foreground transition-all duration-300 ease-in-out"
         disabled
       >
         <Sun className="w-4 h-4 md:w-5 md:h-5" />
@@ -37,17 +37,17 @@ const ModeToggler = () => {
 
   return (
     <Button
-      variant="outline"
+      variant="secondary"
       size="icon"
       onClick={toggleTheme}
-      className="rounded-full shadow-none text-foreground border-transparent hover:border-input hover:bg-transparent hover:text-muted-foreground transition-all duration-300 ease-in-out dark:bg-transparent dark:border-none"
+      className="rounded-sm shadow-none text-foreground bg-transparent hover:bg-secondary transition-all duration-300 ease-in-out"
       aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
     >
       <span ref={iconWrapperRef} className="transition-all duration-300 ease-in-out">
         {theme === "dark" ? (
-          <Moon className="w-4 h-4 stroke-[2] text-inherit" />
+          <Moon className="w-4 h-4 md:w-5 md:h-5 stroke-[2] text-inherit" />
         ) : (
-          <Sun className="w-4 h-4 stroke-[2] text-inherit" />
+          <Sun className="w-4 h-4 md:w-5 md:h-5 stroke-[2] text-inherit" />
         )}
       </span>
     </Button>

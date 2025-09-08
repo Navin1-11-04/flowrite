@@ -6,7 +6,7 @@ import { useEditorIntegration, usePageTitle } from "./useEditorIntegration";
 import { useWorkspace } from "@/store/useWorkspace";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
-import { FileText, AlertCircle } from "lucide-react";
+import { FileText, AlertCircle, Paperclip } from "lucide-react";
 import { Label } from "@/components/ui/label";
 
 interface EditorProps {
@@ -96,7 +96,9 @@ export function Editor({ className, focusMode = false }: EditorProps) {
       delay: 0.5,
     });
 
-    return () => tl.kill();
+    return () => {
+      tl.kill()
+    };
   }, [contentHasFocus]);
 
   // Update caret position for content editor only
@@ -302,10 +304,9 @@ export function Editor({ className, focusMode = false }: EditorProps) {
   }
 
   return (
-    <div className={cn("h-full flex flex-col max-w-[60rem] w-full", className)}>
-      {/* Title Input - Now positioned on the left */}
-      {/* <div>
-        <Label htmlFor="title">Title</Label>
+    <div className={cn("h-full flex flex-col md:max-w-[60rem] w-full px-6 md:p-0 font-poppins", className)}>
+      <div className="w-full flex items-center">
+        <Paperclip className="size-5 md:size-7"/>
         <Input
           id="title"
           ref={titleInputRef}
@@ -315,16 +316,16 @@ export function Editor({ className, focusMode = false }: EditorProps) {
           placeholder="Untitled"
           type="text"
           className={cn(
-            "text-base md:text-lg bg-transparent font-normal shadow-none focus-visible:ring-0 max-w-[230px]"
+            "text-xl md:text-2xl bg-background border-none font-semibold shadow-none truncate focus-visible:ring-0 max-w-full md:max-w-[50%] dark:bg-background focus-visible:bg-background"
           )}
         />
-      </div> */}
-
+      </div>
+      <div className="md:max-w-[60rem] w-full h-[1px] md:h-0.5 bg-secondary rounded-full my-2 md:my-5"></div>
       {/* Content Editor */}
       <div className="flex-1 min-h-0 relative w-full">
         <div
           ref={contentPlaceholderRef}
-          className="pointer-events-none absolute top-5.5 left-2 text-ring select-none whitespace-pre-wrap text-lg md:text-2xl font-extralight"
+          className="pointer-events-none absolute top-4 md:top-5 left-2 text-primary/50 select-none whitespace-pre-wrap text-xl md:text-2xl font-normal"
         >
           {CONTENT_PLACEHOLDERS[contentPlaceholderIndex]}
         </div>
@@ -337,7 +338,7 @@ export function Editor({ className, focusMode = false }: EditorProps) {
           onFocus={handleContentFocus}
           spellCheck={false}
           className={cn(
-            "min-h-full outline-none whitespace-pre-wrap break-words relative z-10 py-4 text-lg md:text-2xl font-normal leading-relaxed",
+            "min-h-full outline-none whitespace-pre-wrap break-words relative z-10 py-4 text-xl md:text-2xl font-normal leading-relaxed",
             focusMode && "text-center"
           )}
           style={{ caretColor: "transparent" }}

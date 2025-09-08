@@ -30,18 +30,17 @@ const ViewToggler = () => {
 
   return (
     <Button
-      variant="outline"
+      variant="secondary"
       size="icon"
       onClick={toggleFullscreen}
-      className="rounded-full shadow-none text-foreground border-transparent hover:border-input hover:bg-transparent hover:text-muted-foreground transition-all duration-300 ease-in-out
-      dark:bg-transparent dark:border-none"
+      className="rounded-sm shadow-none text-foreground bg-transparent hover:bg-secondary transition-all duration-300 ease-in-out"
       aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
     >
       <span ref={iconWrapperRef} className="transition-all duration-300 ease-in-out">
         {isFullscreen ? (
-          <Minimize className="w-4 h-4 stroke-[2] text-inherit" />
+          <Minimize className="w-4 h-4 md:w-5 md:h-5 stroke-[2] text-inherit" />
         ) : (
-          <Maximize className="w-4 h-4 stroke-[2] text-inherit" />
+          <Maximize className="w-4 h-4 md:w-5 md:h-5 stroke-[2] text-inherit" />
         )}
       </span>
     </Button>

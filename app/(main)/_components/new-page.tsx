@@ -25,13 +25,13 @@ const NewPage = () => {
   return (
     <Button
       size="icon"
-      variant="outline"
+      variant="secondary"
       aria-label="New Page"
-      className="rounded-full shadow-none text-foreground border-transparent hover:border-input hover:bg-transparent hover:text-muted-foreground transition-all duration-300 ease-in-out dark:bg-transparent dark:border-none"
+      className="rounded-sm shadow-none text-foreground bg-transparent hover:bg-secondary transition-all duration-300 ease-in-out"
       onClick={handleNewPage}
     >
       <span ref={iconRef} className="transition-all duration-300 ease-in-out">
-        <Plus className="w-4 h-4 stroke-[2] text-inherit" />
+        <Plus className="w-4 h-4 md:w-5 md:h-5 stroke-[2] text-inherit" />
       </span>
     </Button>
   );

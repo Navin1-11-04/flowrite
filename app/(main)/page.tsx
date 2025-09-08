@@ -137,10 +137,9 @@ const MainPage = () => {
       <div className="group w-full min-h-screen h-screen flex flex-col bg-background text-foreground gap-y-2 relative overflow-hidden">
         <Navbar onToggleFooter={() => setShowFooter(!showFooter)} />
 
-        {/* Scrollable editor container */}
         <main
           ref={scrollContainerRef}
-          className="flex-1 h-full w-full leading-none my-[5vh] md:my-[10vh] overflow-y-auto place-items-center relative"
+          className="flex-1 h-full w-full leading-none my-0 md:my-[8vh] overflow-y-auto place-items-center relative"
           style={{
             scrollbarGutter: "stable",
           }}
