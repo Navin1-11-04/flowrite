@@ -294,7 +294,7 @@ export const Navbar = ({ onToggleFooter }: NavbarProps) => {
             /> */}
             <span className="font-medium text-lg">Floww</span>
           </div>
-          <Menu pulse={pulse} iconRefs={iconRefs} />
+          <Menu iconRefs={iconRefs} />
         </div>
 
         <div
