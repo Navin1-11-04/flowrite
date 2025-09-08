@@ -16,8 +16,8 @@ export function useEditorIntegration() {
     startSession 
   } = useSession();
 
-  const saveTimeoutRef = useRef<NodeJS.Timeout>();
-  const isTypingTimeoutRef = useRef<NodeJS.Timeout>();
+  const saveTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
+  const isTypingTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   // Start session when component mounts
   useEffect(() => {
@@ -85,7 +85,7 @@ export function useEditorIntegration() {
 
 export function usePageTitle() {
   const { currentPage, updatePageContent } = useWorkspace();
-  const updateTitleTimeoutRef = useRef<NodeJS.Timeout>();
+  const updateTitleTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   const updateTitle = useCallback((newTitle: string) => {
     if (!currentPage) return;
