@@ -72,74 +72,56 @@ export function Editor({ className, focusMode = false }: EditorProps) {
   }, [currentPage?.id]);
 
   // Animated placeholders for content only
-  useEffect(() => {
-    if (!contentPlaceholderRef.current || !contentCaretRef.current) return;
-    if (
-      contentHasFocus ||
-      (contentEditorRef.current?.textContent?.length || 0) > 0
-    )
-      return;
-
-    const tl = gsap.timeline({ repeat: -1 });
-    tl.to([contentPlaceholderRef.current, contentCaretRef.current], {
-      opacity: 0,
-      duration: 0.5,
-      ease: "power1.inOut",
-      onComplete: () =>
-        setContentPlaceholderIndex(
-          (i) => (i + 1) % CONTENT_PLACEHOLDERS.length
-        ),
-    }).to([contentPlaceholderRef.current, contentCaretRef.current], {
-      opacity: 1,
-      duration: 0.5,
-      ease: "power1.inOut",
-      delay: 0.5,
-    });
-
-    return () => {
-      tl.kill()
-    };
-  }, [contentHasFocus]);
+useEffect(() => {
+  const handleSelectionChange = () => {
+    if (contentHasFocus && contentEditorRef.current && contentCaretRef.current) {
+      updateCaretPosition(contentEditorRef, contentCaretRef, contentHasFocus);
+    }
+  };
+  document.addEventListener("selectionchange", handleSelectionChange);
+  return () =>
+    document.removeEventListener("selectionchange", handleSelectionChange);
+}, [contentHasFocus]);
 
   // Update caret position for content editor only
   const updateCaretPosition = (
-    editorRef: React.RefObject<HTMLDivElement>,
-    caretRef: React.RefObject<HTMLDivElement>,
-    hasFocus: boolean
-  ) => {
-    if (!editorRef.current || !caretRef.current) return;
+  editorRef: React.RefObject<HTMLDivElement | null>,
+  caretRef: React.RefObject<HTMLDivElement | null>,
+  hasFocus: boolean
+) => {
+  if (!editorRef.current || !caretRef.current) return;
 
-    const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0 || !hasFocus) {
-      caretRef.current.style.opacity = "0";
-      return;
-    }
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0 || !hasFocus) {
+    caretRef.current.style.opacity = "0";
+    return;
+  }
 
-    if (!editorRef.current.contains(selection.anchorNode)) {
-      caretRef.current.style.opacity = "0";
-      return;
-    }
+  if (!editorRef.current.contains(selection.anchorNode)) {
+    caretRef.current.style.opacity = "0";
+    return;
+  }
 
-    const range = selection.getRangeAt(0).cloneRange();
-    range.collapse(true);
+  const range = selection.getRangeAt(0).cloneRange();
+  range.collapse(true);
 
-    const span = document.createElement("span");
-    span.textContent = "\u200B";
-    range.insertNode(span);
+  const span = document.createElement("span");
+  span.textContent = "\u200B";
+  range.insertNode(span);
 
-    const rect = span.getBoundingClientRect();
-    const editorRect = editorRef.current.getBoundingClientRect();
+  const rect = span.getBoundingClientRect();
+  const editorRect = editorRef.current.getBoundingClientRect();
 
-    const top = rect.top - editorRect.top;
-    const left = rect.left - editorRect.left;
+  const top = rect.top - editorRect.top;
+  const left = rect.left - editorRect.left;
 
-    span.parentNode?.removeChild(span);
+  span.parentNode?.removeChild(span);
 
-    caretRef.current.style.top = `${top - 2}px`;
-    caretRef.current.style.left = `${left}px`;
-    caretRef.current.style.height = `${Math.max(rect.height, 18)}px`;
-    caretRef.current.style.opacity = "1";
-  };
+  caretRef.current.style.top = `${top - 2}px`;
+  caretRef.current.style.left = `${left}px`;
+  caretRef.current.style.height = `${Math.max(rect.height, 18)}px`;
+  caretRef.current.style.opacity = "1";
+};
 
   // Track selection changes for content editor only
   useEffect(() => {
