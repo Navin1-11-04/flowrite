@@ -6,8 +6,9 @@ import { useEditorIntegration, usePageTitle } from "./useEditorIntegration";
 import { useWorkspace } from "@/store/useWorkspace";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
-import { FileText, AlertCircle, Paperclip } from "lucide-react";
+import { FileText, AlertCircle, Paperclip, FolderPlus } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import { CreateWorkspaceModal } from "./create-workspace-modal";
 
 interface EditorProps {
   className?: string;
@@ -36,6 +37,7 @@ export function Editor({ className, focusMode = false }: EditorProps) {
   const [contentPlaceholderIndex, setContentPlaceholderIndex] = useState(0);
   const [contentHasFocus, setContentHasFocus] = useState(false);
   const [titleValue, setTitleValue] = useState("");
+  const [showCreateWorkspaceModal, setShowCreateWorkspaceModal] = useState(false);
 
   // Refs for DOM manipulation
   const contentEditorRef = useRef<HTMLDivElement | null>(null);
@@ -206,6 +208,11 @@ useEffect(() => {
     await createPage("My First Page");
   };
 
+  // Handle create workspace modal
+  const handleCreateWorkspace = () => {
+    setShowCreateWorkspaceModal(true);
+  };
+
   // Clean up timeout on unmount
   useEffect(() => {
     return () => {
@@ -227,6 +234,43 @@ useEffect(() => {
           <p className="text-sm text-muted-foreground">Loading workspace...</p>
         </div>
       </div>
+    );
+  }
+
+  // Show empty state if no workspaces exist
+  if (!currentWorkspaceId && workspaces.length === 0) {
+    return (
+      <>
+        <div
+          className={cn(
+            "flex items-center justify-center min-h-[60vh]",
+            className
+          )}
+        >
+          <div className="text-center space-y-4 max-w-md">
+            <div className="space-y-2">
+              <FolderPlus className="w-12 h-12 mx-auto text-muted-foreground/50" />
+              <h3 className="text-lg font-medium">No workspace found</h3>
+              <p className="text-sm text-muted-foreground">
+                Create your first workspace to start organizing your writing projects.
+              </p>
+            </div>
+
+            <button
+              onClick={handleCreateWorkspace}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+            >
+              <FolderPlus className="w-4 h-4" />
+              Create Your First Workspace
+            </button>
+          </div>
+        </div>
+        
+        <CreateWorkspaceModal 
+          open={showCreateWorkspaceModal} 
+          onOpenChange={setShowCreateWorkspaceModal}
+        />
+      </>
     );
   }
 

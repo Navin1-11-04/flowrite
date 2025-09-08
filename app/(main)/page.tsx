@@ -8,7 +8,6 @@ import { CreateWorkspaceModal } from "./_components/create-workspace-modal";
 import { useWorkspace } from "@/store/useWorkspace";
 import { useSession } from "@/store/useSession";
 import gsap from "gsap";
-import ModeToggler from "./_components/mode-toggler";
 
 const MainPage = () => {
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
@@ -50,10 +49,15 @@ const MainPage = () => {
     initialize();
   }, [initialized, loadWorkspaces, startSession]);
 
-  // Check if we need to show create workspace modal
+  // Check if we need to show create workspace modal (only when user first visits and has no workspaces)
   useEffect(() => {
     if (initialized && !isLoading && workspaces.length === 0 && !currentWorkspaceId && !error) {
-      setShowCreateModal(true);
+      // Only show modal on first visit - if user cancels, they can use the Editor's create workspace button
+      const hasSeenModal = localStorage.getItem('hasSeenCreateWorkspaceModal');
+      if (!hasSeenModal) {
+        setShowCreateModal(true);
+        localStorage.setItem('hasSeenCreateWorkspaceModal', 'true');
+      }
     } else {
       setShowCreateModal(false);
     }
@@ -154,7 +158,7 @@ const MainPage = () => {
         </div>
       </div>
 
-      {/* Create Workspace Modal */}
+      {/* Create Workspace Modal - only show on first visit */}
       <CreateWorkspaceModal 
         open={showCreateModal} 
         onOpenChange={setShowCreateModal}
