@@ -18,18 +18,16 @@ import { HistoryDialog } from "./history";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type MenuProps = {
-  pulse: (id: string) => void;
   iconRefs: RefObject<Record<string, SVGSVGElement | null>>;
 };
 
-export const Menu = ({ pulse, iconRefs }: MenuProps) => {
+export const Menu = ({ iconRefs }: MenuProps) => {
   const { currentPage, exportPage } = useWorkspace();
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   const handleExport = (format: 'txt' | 'html' | 'md') => {
     if (currentPage) {
       exportPage(currentPage.id, format);
-      pulse("export");
     }
   };
 
@@ -48,7 +46,6 @@ export const Menu = ({ pulse, iconRefs }: MenuProps) => {
           <Button
             size="icon"
             variant="ghost"
-            onClick={() => pulse("ellipsis")}
             className="shadow-none rounded-sm"
           >
             <EllipsisVertical
