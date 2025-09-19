@@ -10,27 +10,49 @@ type Props = {
 };
 
 const UserProvider = ({ children }: Props) => {
-  const { setUser, clearUser, setLoading } = useUserStore();
+  const { setUser, clearUser, setLoading, setError } = useUserStore();
 
   useEffect(() => {
-    setLoading(true);
+    console.log("🔄 UserProvider: Starting auth listener");
+    setLoading(); // This sets authState to 'loading'
 
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      if (firebaseUser) {
-        setUser({
-          uid: firebaseUser.uid,
-          name: firebaseUser.displayName,
-          email: firebaseUser.email,
-          photoURL: firebaseUser.photoURL,
-        });
-      } else {
-        clearUser();
-      }
-      setLoading(false);
+    const unsubscribe = onAuthStateChanged(
+  auth, 
+  (firebaseUser) => {
+    console.log("🔥 Auth state changed:", firebaseUser ? "User found" : "No user");
+
+    if (firebaseUser) {
+      setUser({
+        uid: firebaseUser.uid,
+        name: firebaseUser.displayName,
+        email: firebaseUser.email,
+        photoURL: firebaseUser.photoURL,
+        emailVerified: firebaseUser.emailVerified,
+      });
+    } else {
+      clearUser();
+    }
+
+    // ✅ mark loading as finished
+    // even if no user is found
+    setLoading(false);
+  },
+  (error) => {
+    console.error("🚨 Auth error:", error);
+    setError({
+      code: error.code,
+      message: error.message
     });
+    setLoading(false);
+  }
+);
 
-    return () => unsubscribe();
-  }, [setUser, clearUser, setLoading]);
+
+    return () => {
+      console.log("🧹 Cleaning up auth listener");
+      unsubscribe();
+    };
+  }, [setUser, clearUser, setLoading, setError]);
 
   return <>{children}</>;
 };
