@@ -1,10 +1,10 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
-import { Editor } from "./_components/editor";
-import { Footer } from "./_components/footer";
-import { Navbar } from "./_components/navbar";
-import { CreateWorkspaceModal } from "./_components/create-workspace-modal";
+import { Editor } from "../_components/editor";
+import { Footer } from "../_components/footer";
+import { Navbar } from "../_components/navbar";
+import { CreateWorkspaceModal } from "../_components/create-workspace-modal";
 import { useWorkspace } from "@/store/useWorkspace";
 import { useSession } from "@/store/useSession";
 import gsap from "gsap";
@@ -15,7 +15,14 @@ const MainPage = () => {
   const footerRef = useRef<HTMLDivElement>(null);
 
   // Initialize stores
-  const { loadWorkspaces, isLoading, workspaces, error, clearError, currentWorkspaceId } = useWorkspace();
+  const {
+    loadWorkspaces,
+    isLoading,
+    workspaces,
+    error,
+    clearError,
+    currentWorkspaceId,
+  } = useWorkspace();
   const { startSession } = useSession();
 
   // Track initialization to prevent multiple calls
@@ -26,42 +33,55 @@ const MainPage = () => {
   // Initialize app on mount
   useEffect(() => {
     if (initialized) return;
-    
-    console.log('MainPage initializing...');
+
+    console.log("MainPage initializing...");
 
     const initialize = async () => {
       try {
-        console.log('Starting initialization...');
-        
+        console.log("Starting initialization...");
+
         // Start session first
         startSession();
-        console.log('Session started');
+        console.log("Session started");
 
         // Load workspaces
         await loadWorkspaces();
-        console.log('Load workspaces completed');
-        
+        console.log("Load workspaces completed");
+
         setInitialized(true);
       } catch (err) {
-        console.error('Initialization error:', err);
+        console.error("Initialization error:", err);
       }
     };
-    
+
     initialize();
   }, [initialized, loadWorkspaces, startSession]);
 
   // Check if we need to show create workspace modal
   useEffect(() => {
-    if (initialized && !isLoading && workspaces.length === 0 && !currentWorkspaceId && !error) {
+    if (
+      initialized &&
+      !isLoading &&
+      workspaces.length === 0 &&
+      !currentWorkspaceId &&
+      !error
+    ) {
       // Only show modal on first visit and if user hasn't declined
-      const hasSeenModal = localStorage.getItem('hasSeenCreateWorkspaceModal');
+      const hasSeenModal = localStorage.getItem("hasSeenCreateWorkspaceModal");
       if (!hasSeenModal && !hasUserDeclinedModal) {
         setShowCreateModal(true);
       }
     } else {
       setShowCreateModal(false);
     }
-  }, [initialized, isLoading, workspaces.length, currentWorkspaceId, error, hasUserDeclinedModal]);
+  }, [
+    initialized,
+    isLoading,
+    workspaces.length,
+    currentWorkspaceId,
+    error,
+    hasUserDeclinedModal,
+  ]);
 
   // Handle modal close - differentiate between successful creation and cancellation
   const handleModalChange = (open: boolean) => {
@@ -71,10 +91,10 @@ const MainPage = () => {
         // User canceled without creating workspace
         setHasUserDeclinedModal(true);
         // Only set the localStorage flag if they actually canceled
-        localStorage.setItem('hasSeenCreateWorkspaceModal', 'true');
+        localStorage.setItem("hasSeenCreateWorkspaceModal", "true");
       } else {
         // Workspace was created successfully, mark as seen
-        localStorage.setItem('hasSeenCreateWorkspaceModal', 'true');
+        localStorage.setItem("hasSeenCreateWorkspaceModal", "true");
       }
     }
     setShowCreateModal(open);
@@ -113,13 +133,13 @@ const MainPage = () => {
             <h2 className="text-xl font-semibold">Something went wrong</h2>
             <p className="text-sm text-muted-foreground">{error}</p>
             <div className="space-y-2">
-              <button 
+              <button
                 onClick={clearError}
                 className="px-4 py-2 bg-primary text-primary-foreground rounded-md mr-2"
               >
                 Try Again
               </button>
-              <button 
+              <button
                 onClick={() => {
                   // Clear IndexedDB and reload
                   if (window.indexedDB) {
@@ -146,7 +166,9 @@ const MainPage = () => {
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center space-y-4">
             <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto" />
-            <p className="text-sm text-muted-foreground">Loading your workspace...</p>
+            <p className="text-sm text-muted-foreground">
+              Loading your workspace...
+            </p>
           </div>
         </div>
       </div>
@@ -166,7 +188,7 @@ const MainPage = () => {
           }}
         >
           <Editor />
-        </main>        
+        </main>
         <div
           ref={footerRef}
           className="absolute bottom-0 left-0 z-20 right-0 translate-y-0 opacity-100"
@@ -176,8 +198,8 @@ const MainPage = () => {
       </div>
 
       {/* Create Workspace Modal - show on first visit or when explicitly requested */}
-      <CreateWorkspaceModal 
-        open={showCreateModal} 
+      <CreateWorkspaceModal
+        open={showCreateModal}
         onOpenChange={handleModalChange}
       />
     </>

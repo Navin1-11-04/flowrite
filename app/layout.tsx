@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { ThemeProvider } from "@/lib/theme-provider";
+import { ThemeProvider } from "@/components/providers/theme-provider";
+import { Toaster } from "sonner";
+import UserProvider from "@/components/providers/user-provider";
 
 export const metadata: Metadata = {
   title: "Floww – Minimal Writing Workspace",
@@ -18,6 +20,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
@@ -26,9 +29,12 @@ export default function RootLayout({
             defaultTheme="system"
             enableSystem
             disableTransitionOnChange
-            storageKey="flowrite-theme"
-          >
-        {children}
+            storageKey="flo-theme"
+            >
+          <Toaster position="bottom-right" />
+            <UserProvider>
+            {children}
+            </UserProvider>
         </ThemeProvider>
       </body>
     </html>
