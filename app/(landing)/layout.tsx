@@ -1,21 +1,21 @@
 "use client";
 
-import { Spinner } from "@/components/ui/spinner";
-import { useUserStore } from "@/store/useUserStore";
+import { useEffect, useState } from "react";
 
 const LandingLayout = ({ children }: { children: React.ReactNode }) => {
-  const { isLoading } = useUserStore();
+  const [mounted, setMounted] = useState(false);
 
-  // Show loader until auth state is determined
-  if (isLoading) {
-    return (
-      <div className="h-full flex items-center justify-center">
-        <Spinner size="lg" />
-      </div>
-    );
+  // Handle hydration
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Show nothing during hydration to prevent mismatch
+  if (!mounted) {
+    return null;
   }
 
-  // Once loading is complete, show the landing page regardless of auth state
+  // Always show the landing page - let navbar handle auth state
   return (
     <div className="h-full w-full">
       {children}

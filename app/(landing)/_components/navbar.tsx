@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button";
 import useScrollTop from "@/hooks/use-scroll-top";
 import { cn } from "@/lib/utils";
 import { auth, provider, signInWithPopup } from "@/lib/firebase";
-import { signOut } from "firebase/auth";
 import { useUserStore } from "@/store/useUserStore";
 import { Spinner } from "@/components/ui/spinner";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { ArrowRightIcon } from "@radix-ui/react-icons"
+import { UserProfileDropdown } from "./user-profile";
 
 export const Navbar = () => {
   const { user, isLoading, isAuthenticated } = useUserStore();
@@ -27,17 +28,6 @@ export const Navbar = () => {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      toast.success("Successfully logged out!");
-      router.push("/");
-    } catch (err: any) {
-      console.error("Logout failed:", err);
-      toast.error("Logout failed. Please try again.");
-    }
-  };
-
   const handleGetStarted = () => {
     if (isAuthenticated) {
       router.push("/home");
@@ -49,7 +39,7 @@ export const Navbar = () => {
   return (
     <div
       className={cn(
-        "z-50 bg-background fixed top-0 flex items-center w-full p-2 font-poppins text-foreground",
+        "z-50 bg-background fixed top-0 flex items-center w-full p-4 font-poppins text-foreground",
         scrolled && "backdrop-blur-md border-b border-border/40"
       )}
     >
@@ -60,38 +50,40 @@ export const Navbar = () => {
         Flo
       </h1>
       
-      <div className="md:ml-auto md:justify-end justify-between w-full flex items-center gap-x-2 px-2">
-        {isLoading && <Spinner />}
-
-        {!isLoading && !isAuthenticated && (
-          <>
-            <Button variant="ghost" onClick={handleLogin}>
-              Login
-            </Button>
-            <Button onClick={handleGetStarted}>
-              Get Started
-            </Button>
-          </>
+      <div className="md:ml-auto md:justify-end justify-between w-full flex items-center gap-x-1 sm:gap-x-2 px-2">
+        
+        {/* Show loading state only in navbar */}
+        {isLoading && (
+          <div className="flex items-center gap-2">
+            <Spinner size="sm" />
+          </div>
         )}
 
+        {/* Not authenticated - show login options */}
+        {!isLoading && !isAuthenticated && (
+          <div className="flex items-center gap-1 sm:gap-2">
+            <Button variant="ghost" onClick={handleLogin} className="rounded-full font-normal text-xs sm:text-sm shadow-none px-3 sm:px-4">
+              Log in
+            </Button>
+            <Button onClick={handleGetStarted} className="rounded-full font-normal text-xs sm:text-sm shadow-none px-3 sm:px-4">
+              <span className="hidden xs:inline">Get started</span>
+              <span className="xs:hidden">Start</span>
+              <ArrowRightIcon className="w-3 h-3 sm:w-4 sm:h-4 ml-1"/>
+            </Button>
+          </div>
+        )}
+
+        {/* Authenticated - show user profile dropdown */}
         {!isLoading && isAuthenticated && user && (
-          <div className="flex items-center gap-x-2">
+          <div className="flex items-center gap-x-1 sm:gap-x-2">
             <Button 
-              variant="ghost" 
+              variant="default" 
               onClick={() => router.push("/home")}
-              className="hidden sm:inline-flex"
+              className="hidden sm:inline-flex rounded-full font-normal text-sm shadow-none"
             >
-              Dashboard
+              Dashboard<ArrowRightIcon className="ml-1"/>
             </Button>
-            <img
-              src={user.photoURL || "/default-avatar.png"}
-              alt={user.name || "User"}
-              className="h-8 w-8 rounded-full ring-2 ring-border"
-            />
-            <span className="hidden sm:inline">{user.name}</span>
-            <Button variant="outline" onClick={handleLogout}>
-              Logout
-            </Button>
+            <UserProfileDropdown />
           </div>
         )}
 

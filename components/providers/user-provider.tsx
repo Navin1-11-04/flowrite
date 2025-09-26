@@ -14,39 +14,49 @@ const UserProvider = ({ children }: Props) => {
 
   useEffect(() => {
     console.log("🔄 UserProvider: Starting auth listener");
-    setLoading(); // This sets authState to 'loading'
+    setLoading(true);
 
     const unsubscribe = onAuthStateChanged(
-  auth, 
-  (firebaseUser) => {
-    console.log("🔥 Auth state changed:", firebaseUser ? "User found" : "No user");
+      auth, 
+      (firebaseUser) => {
+        console.log("🔥 Auth state changed:", firebaseUser ? "User found" : "No user");
+        
+        if (firebaseUser) {
+          console.log("👤 Setting user:", {
+            uid: firebaseUser.uid,
+            name: firebaseUser.displayName,
+            email: firebaseUser.email
+          });
+          
+          setUser({
+            uid: firebaseUser.uid,
+            name: firebaseUser.displayName,
+            email: firebaseUser.email,
+            photoURL: firebaseUser.photoURL,
+            emailVerified: firebaseUser.emailVerified,
+          });
+        } else {
+          console.log("🚫 Clearing user");
+          clearUser();
+        }
 
-    if (firebaseUser) {
-      setUser({
-        uid: firebaseUser.uid,
-        name: firebaseUser.displayName,
-        email: firebaseUser.email,
-        photoURL: firebaseUser.photoURL,
-        emailVerified: firebaseUser.emailVerified,
-      });
-    } else {
-      clearUser();
-    }
-
-    // ✅ mark loading as finished
-    // even if no user is found
-    setLoading(false);
-  },
-  (error) => {
-    console.error("🚨 Auth error:", error);
-    setError({
-      code: error.code,
-      message: error.message
-    });
-    setLoading(false);
-  }
-);
-
+        console.log("⏳ Setting loading to false");
+        setLoading(false);
+        
+        // Debug: Check store state after update
+        setTimeout(() => {
+          console.log("📊 Store state after auth update:", useUserStore.getState());
+        }, 100);
+      },
+      (error) => {
+        console.error("🚨 Auth error:", error);
+        setError({
+          code: error.code,
+          message: error.message
+        });
+        setLoading(false);
+      }
+    );
 
     return () => {
       console.log("🧹 Cleaning up auth listener");
